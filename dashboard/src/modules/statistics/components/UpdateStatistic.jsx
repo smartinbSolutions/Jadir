@@ -40,7 +40,7 @@ const UpdateStatistic = () => {
         />
       ),
     },
-    ...["en", "ar"].map((lang) => ({
+    ...["en", "ar" , "tr"].map((lang) => ({
       key: `statistic_${lang}`,
       label: `Statistic ${lang.toUpperCase()}`,
       icon: "ki-outline ki-clipboard",

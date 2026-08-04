@@ -447,11 +447,14 @@ const ContactForm = () => {
                     <span>
                       {isSubmitting ? t("loading") : t("contact.submit")}
                     </span>
+
                     <i
                       className={
                         isSubmitting
                           ? "fa-solid fa-spinner fa-spin"
-                          : "fa-solid fa-arrow-right"
+                          : i18n.language?.startsWith("ar")
+                            ? "fa-solid fa-arrow-left"
+                            : "fa-solid fa-arrow-right"
                       }
                       aria-hidden="true"
                     />

@@ -212,7 +212,8 @@ const getCareerWithForm = async (careerIdOrSlug) => {
   const query = mongoose.Types.ObjectId.isValid(careerIdOrSlug)
     ? { _id: careerIdOrSlug }
     : { slug: careerIdOrSlug };
-  const career = await CareerModel.findOne(query).lean();
+
+  const career = await CareerModel.findOne(query);
 
   if (!career) return null;
 
@@ -220,7 +221,10 @@ const getCareerWithForm = async (careerIdOrSlug) => {
     career: career._id,
   }).lean();
 
-  return { ...career, applicationForm };
+  return {
+    ...career.toObject(),
+    applicationForm,
+  };
 };
 
 const parseApplicationFilters = (filters) => {

@@ -5,7 +5,7 @@ import AddButton from "@/components/Global/AddButton";
 import { useBoardMembers } from "../../hooks/useBoardMembers";
 import LoadingCard from "../../../components/Global/LoadingCard";
 import ErrorMessageCard from "../../../components/Global/ErrorMessageCard";
-import { imageURL } from "../../../Api/GlobalData";
+import getImageUrl from "../../../utils/getImageUrl";
 
 const AllBoardMembers = () => {
   const navigate = useNavigate();
@@ -83,25 +83,39 @@ const AllBoardMembers = () => {
                   {boardMembers?.map((member) => (
                     <tr key={member?._id}>
                       <td>
-                        {member?.image ? (
+                        {member?.imageUrl ? (
                           <img
-                            src={`${imageURL}/boardMember/${member?.image}`}
-                            alt={member?.name?.en || "team member"}
-                            className="w-14 h-14 rounded-xl object-cover border"
+                            src={getImageUrl(member.imageUrl)}
+                            alt={
+                              member?.name?.en ||
+                              member?.name?.ar ||
+                              member?.name?.tr ||
+                              "Team member"
+                            }
+                            className="h-14 w-14 rounded-xl border border-gray-200 object-cover"
+                            loading="lazy"
+                            onError={(event) => {
+                              event.currentTarget.style.display = "none";
+                              event.currentTarget.nextElementSibling?.classList.remove(
+                                "hidden",
+                              );
+                            }}
                           />
-                        ) : (
-                          <div className="w-14 h-14 rounded-xl border flex items-center justify-center text-xs text-gray-400">
-                            No Img
-                          </div>
-                        )}
+                        ) : null}
+
+                        <div
+                          className={`h-14 w-14 items-center justify-center rounded-xl border border-gray-200 bg-gray-50 text-xs text-gray-400 ${
+                            member?.imageUrl ? "hidden" : "flex"
+                          }`}
+                        >
+                          No Img
+                        </div>
                       </td>
 
                       <td>
                         <div className="space-y-1">
                           <span className="text-sm font-medium text-gray-800">
-                            {member?.name?.en ||
-                              member?.name?.ar ||
-                              "-"}
+                            {member?.name?.en || member?.name?.ar || "-"}
                           </span>
                           {member?.isFounder ? (
                             <div>
@@ -115,9 +129,7 @@ const AllBoardMembers = () => {
 
                       <td>
                         <span className="text-sm text-gray-700 line-clamp-2">
-                          {member?.bio?.en ||
-                            member?.bio?.ar ||
-                            "-"}
+                          {member?.bio?.en || member?.bio?.ar || "-"}
                         </span>
                       </td>
 

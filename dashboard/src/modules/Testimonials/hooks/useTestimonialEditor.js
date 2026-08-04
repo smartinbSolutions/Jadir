@@ -6,8 +6,11 @@ const emptyLangState = {
   tr: "",
 };
 
-export const useTestimonialEditorState = (testimonial, initialImage = "") => {
-  const [name, setName] = useState("");
+export const useTestimonialEditorState = ({
+  testimonial = null,
+  initialImage = "",
+} = {}) => {
+  const [name, setName] = useState({ ...emptyLangState });
   const [role, setRole] = useState({ ...emptyLangState });
   const [company, setCompany] = useState({ ...emptyLangState });
   const [content, setContent] = useState({ ...emptyLangState });
@@ -15,7 +18,7 @@ export const useTestimonialEditorState = (testimonial, initialImage = "") => {
   const [isFeatured, setIsFeatured] = useState(false);
   const [order, setOrder] = useState(0);
   const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(initialImage || "");
+  const [imagePreview, setImagePreview] = useState("");
 
   useEffect(() => {
     if (!testimonial) return;
@@ -44,7 +47,8 @@ export const useTestimonialEditorState = (testimonial, initialImage = "") => {
     setIsFeatured(testimonial?.isFeatured ?? false);
     setOrder(testimonial?.order ?? 0);
     setImageFile(null);
-    setImagePreview(initialImage || "");
+
+    setImagePreview(initialImage);
   }, [initialImage, testimonial]);
 
   const handleLangChange = (group, lang, value) => {
@@ -94,6 +98,7 @@ export const useTestimonialEditorState = (testimonial, initialImage = "") => {
   return {
     name,
     setName,
+    imageFile,
     role,
     company,
     content,

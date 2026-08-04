@@ -2,37 +2,121 @@
 
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Pagination, Autoplay } from "swiper/modules";
+
+import { Pagination, Autoplay, Navigation } from "swiper/modules";
+
+import getImageUrl from "@/components/utils/getImageUrl";
 
 import "swiper/css";
 import "swiper/css/pagination";
+import "swiper/css/navigation";
 
-function getInitials(name = "") {
-  const orgName = name?.en ?? name;
-  return orgName
+const getLocalizedText = (value, lang = "en", fallback = "") => {
+  if (typeof value === "string" || typeof value === "number") {
+    return String(value);
+  }
+
+  if (!value || typeof value !== "object") {
+    return fallback;
+  }
+
+  const localizedValue = value[lang] ?? value.en ?? value.ar ?? value.tr;
+
+  if (
+    typeof localizedValue === "string" ||
+    typeof localizedValue === "number"
+  ) {
+    return String(localizedValue);
+  }
+
+  return fallback;
+};
+
+const getInitials = (name = "") => {
+  if (typeof name !== "string") {
+    return "";
+  }
+
+  return name
     .split(" ")
     .filter(Boolean)
     .slice(0, 2)
-    .map((part) => part[0])
+    .map((part) => part.charAt(0))
     .join("")
     .toUpperCase();
-}
+};
+
+const getTestimonialImage = (testimonial) => {
+  const imagePath =
+    testimonial?.imageUrl ||
+    testimonial?.avatarUrl ||
+    testimonial?.image ||
+    testimonial?.avatar ||
+    "";
+
+  const normalizedPath = Array.isArray(imagePath) ? imagePath[0] : imagePath;
+
+  if (!normalizedPath || typeof normalizedPath !== "string") {
+    return "";
+  }
+
+  if (/^https?:\/\//i.test(normalizedPath)) {
+    return normalizedPath;
+  }
+
+  if (normalizedPath.startsWith("/")) {
+    return getImageUrl(normalizedPath);
+  }
+
+  if (normalizedPath.startsWith("uploads/")) {
+    return getImageUrl(`/${normalizedPath}`);
+  }
+
+  return getImageUrl(`/uploads/testimonials/${normalizedPath}`);
+};
 
 export default function TestimonialsShowcase({ testimonials = [] }) {
   const { i18n, t } = useTranslation();
-  const lang = i18n.language || "en";
+
+  const lang = (i18n.resolvedLanguage || i18n.language || "en").split("-")[0];
+
   const isRtl = lang === "ar";
 
   const sortedTestimonials = useMemo(() => {
-    return [...testimonials].sort((a, b) => {
+    const safeTestimonials = Array.isArray(testimonials) ? testimonials : [];
+
+    return [...safeTestimonials].sort((a, b) => {
       const aDate = new Date(a?.createdAt || 0).getTime();
+
       const bDate = new Date(b?.createdAt || 0).getTime();
+
       return bDate - aDate;
     });
   }, [testimonials]);
 
-  if (!sortedTestimonials.length) return null;
+  if (!sortedTestimonials.length) {
+    return null;
+  }
+
+  const canNavigate = sortedTestimonials.length > 1;
+
+  const canLoop = sortedTestimonials.length > 3;
+
+  const sectionLabel = getLocalizedText(
+    t("about.testimonials"),
+    lang,
+    "Testimonials",
+  );
+
+  const sectionTitle = getLocalizedText(
+    t("trustedAmbitious"),
+    lang,
+    "Trusted by ambitious businesses",
+  );
+
+  const sectionSubtitle = getLocalizedText(t("usedByFounders"), lang, "");
 
   return (
     <section
@@ -44,73 +128,137 @@ export default function TestimonialsShowcase({ testimonials = [] }) {
           <div className="jadwa-testimonials-head">
             <div className="jadwa-pill">
               <span className="jadwa-pill-dot" />
-              <span>{t("about.testimonials")}</span>
+
+              <span>{sectionLabel}</span>
             </div>
 
-            <h2 className="jadwa-testimonials-title">
-              {t("trustedAmbitious")}
-            </h2>
+            <h2 className="jadwa-testimonials-title">{sectionTitle}</h2>
 
-            <p className="jadwa-testimonials-subtitle">{t("usedByFounders")}</p>
+            {sectionSubtitle ? (
+              <p className="jadwa-testimonials-subtitle">{sectionSubtitle}</p>
+            ) : null}
           </div>
 
           <div className="jadwa-featured-swiper-wrap">
+            {canNavigate ? (
+              <>
+                <button
+                  type="button"
+                  className="jadwa-featured-nav jadwa-featured-left"
+                  aria-label="Previous testimonial"
+                >
+                  <i className="fa-solid fa-chevron-left" aria-hidden="true" />
+                </button>
+
+                <button
+                  type="button"
+                  className="jadwa-featured-nav jadwa-featured-right"
+                  aria-label="Next testimonial"
+                >
+                  <i className="fa-solid fa-chevron-right" aria-hidden="true" />
+                </button>
+              </>
+            ) : null}
+
             <Swiper
-              key={isRtl ? "rtl" : "ltr"}
-              modules={[Pagination, Autoplay]}
+              key={`${lang}-${isRtl ? "rtl" : "ltr"}`}
+              modules={[Pagination, Autoplay, Navigation]}
+              navigation={
+                canNavigate
+                  ? {
+                      prevEl: isRtl
+                        ? ".jadwa-featured-right"
+                        : ".jadwa-featured-left",
+
+                      nextEl: isRtl
+                        ? ".jadwa-featured-left"
+                        : ".jadwa-featured-right",
+                    }
+                  : false
+              }
               spaceBetween={16}
               slidesPerView={1}
               breakpoints={{
-                768: { slidesPerView: 2 },
-                1200: { slidesPerView: 3 },
+                768: {
+                  slidesPerView: 2,
+                },
+
+                1200: {
+                  slidesPerView: 3,
+                },
               }}
-              pagination={{ clickable: true }}
-              loop={true}
-              autoplay={{
-                delay: 5000,
-                disableOnInteraction: false,
+              pagination={{
+                clickable: true,
               }}
+              watchOverflow
+              loop={canLoop}
+              rewind={canNavigate && !canLoop}
+              autoplay={
+                canNavigate
+                  ? {
+                      delay: 5000,
+                      disableOnInteraction: false,
+                      pauseOnMouseEnter: true,
+                    }
+                  : false
+              }
               dir={isRtl ? "rtl" : "ltr"}
-              rtl={isRtl}
               className="jadwa-featured-swiper"
             >
-              {sortedTestimonials.map((item, index) => (
-                <SwiperSlide key={item?._id || index}>
-                  <article className="jadwa-featured-card">
-                    <div className="jadwa-quote-light">"</div>
+              {sortedTestimonials.map((item, index) => {
+                const content = getLocalizedText(item?.content, lang, "");
 
-                    <p className="jadwa-featured-text">
-                      {item?.content?.[lang] || item?.content?.en || ""}
-                    </p>
+                const name = getLocalizedText(item?.name, lang, "Client");
 
-                    <div className="jadwa-stars">
-                      {Array.from({
-                        length: Math.max(
-                          1,
-                          Math.min(Number(item?.rating || 5), 5)
-                        ),
-                      }).map((_, i) => (
-                        <i key={i} className="fa-solid fa-star" />
-                      ))}
-                    </div>
+                const role = getLocalizedText(item?.role, lang, "");
 
-                    <div className="jadwa-user">
-                      <div className="jadwa-avatar jadwa-avatar-dark">
-                        {getInitials(
-                          item?.name?.[lang] ?? item?.name?.en ?? "Client"
-                        )}
+                const avatarSrc = getTestimonialImage(item);
+
+                const rating = Math.max(
+                  1,
+                  Math.min(Number(item?.rating || 5), 5),
+                );
+
+                return (
+                  <SwiperSlide key={item?._id || item?.id || index}>
+                    <article className="jadwa-featured-card">
+                      <div className="jadwa-quote-light">&quot;</div>
+
+                      {content ? (
+                        <p className="jadwa-featured-text">{content}</p>
+                      ) : null}
+
+                      <div className="jadwa-stars">
+                        {Array.from({
+                          length: rating,
+                        }).map((_, starIndex) => (
+                          <i
+                            key={starIndex}
+                            className="fa-solid fa-star"
+                            aria-hidden="true"
+                          />
+                        ))}
                       </div>
 
-                      <div className="jadwa-user-meta">
-                        <h4>
-                          {item?.name?.[lang] ?? item?.name?.en ?? "Client"}
-                        </h4>
-                        <p>{item?.role?.[lang] || item?.role?.en || ""}</p>
+                      <div className="jadwa-user">
+                        <div className="jadwa-avatar jadwa-avatar-dark">
+                          {avatarSrc ? (
+                            <img src={avatarSrc} alt={name} loading="lazy" />
+                          ) : (
+                            getInitials(name)
+                          )}
+                        </div>
+
+                        <div className="jadwa-user-meta">
+                          <h4>{name}</h4>
+
+                          {role ? <p>{role}</p> : null}
+                        </div>
                       </div>
-                    </div>
-                  </article>
-                </SwiperSlide>
-              ))}
+                    </article>
+                  </SwiperSlide>
+                );
+              })}
             </Swiper>
           </div>
         </div>

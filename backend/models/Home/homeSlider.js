@@ -8,4 +8,13 @@ const homeSliderSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+homeSliderSchema.virtual("imageUrl").get(function () {
+  if (!this.img) return "";
+
+  return `/uploads/homeSlider/${this.img}`;
+});
+
+homeSliderSchema.set("toJSON", { virtuals: true });
+homeSliderSchema.set("toObject", { virtuals: true });
+
 module.exports = mongoose.model("homeSlider", homeSliderSchema);

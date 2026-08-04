@@ -2,8 +2,8 @@ import { Container } from "@mui/material";
 import { useNavigate, useParams } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import Tabs from "../../../components/Global/Tabs";
-import { imageURL } from "../../../Api/GlobalData";
 import ErrorMessageCard from "../../../components/Global/ErrorMessageCard";
+import getImageUrl from "../../../utils/getImageUrl";
 import LoadingCard from "../../../components/Global/LoadingCard";
 import {
   useOneTestimonial,
@@ -17,11 +17,10 @@ const UpdateTestimonial = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const { testimonial, isLoading, error } = useOneTestimonial(id);
-  const { updateTestimonial, isUpdating } = useTestimonials();
-
-  const initialImage = testimonial?.image
-    ? `${imageURL}/testimonials/${testimonial.image}`
+  const initialImage = testimonial?.imageUrl
+    ? getImageUrl(testimonial.imageUrl)
     : "";
+  const { updateTestimonial, isUpdating } = useTestimonials();
 
   const {
     name,
@@ -39,7 +38,7 @@ const UpdateTestimonial = () => {
     onImageChange,
     handleLangChange,
     toFormData,
-  } = useTestimonialEditorState(testimonial, initialImage);
+  } = useTestimonialEditorState({testimonial, initialImage});
 
   const handleSave = async () => {
     try {

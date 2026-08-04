@@ -10,6 +10,7 @@ const useUpdateCategoryForm = (initialCategory, onClose) => {
     name: {
       ar: "",
       en: "",
+      tr: "",  
     },
   });
 
@@ -22,6 +23,7 @@ const useUpdateCategoryForm = (initialCategory, onClose) => {
         name: {
           ar: initialCategory?.name?.ar || "",
           en: initialCategory?.name?.en || "",
+          tr: initialCategory?.name?.tr || "",
         },
       });
     }
@@ -42,6 +44,7 @@ const useUpdateCategoryForm = (initialCategory, onClose) => {
 
     if (!category.name.ar.trim()) newErrors.ar = "Required";
     if (!category.name.en.trim()) newErrors.en = "Required";
+    if (!category.name.tr.trim()) newErrors.tr = "Required";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;

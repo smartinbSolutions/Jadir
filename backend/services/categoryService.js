@@ -21,6 +21,7 @@ exports.getCategories = asyncHandler(async (req, res) => {
     query.$or = [
       { "name.ar": { $regex: safeKeyword, $options: "i" } },
       { "name.en": { $regex: safeKeyword, $options: "i" } },
+      { "name.tr": { $regex: safeKeyword, $options: "i" } },
       { slug: { $regex: safeKeyword, $options: "i" } },
     ];
   }

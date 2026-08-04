@@ -1,38 +1,54 @@
 import Layout from "@/components/layout/Layout";
 import parse from "html-react-parser";
+
 import {
   getPolicyBySlug,
   getWebsiteData,
   localize,
 } from "@/components/website/websiteUtils";
+
+import { getPageBanners, resolvePageBanner } from "@/lib/pageBanners";
+
 import { useTranslation } from "react-i18next";
 
-export default function PolicyDetailsPage({ policy }) {
+export default function PolicyDetailsPage({ policy, pageBanners = {} }) {
   const { i18n } = useTranslation();
+
   const lang = i18n?.language || "en";
 
   if (!policy) return null;
 
-  const title = policy?.title?.[lang] || policy?.title?.en || "";
-  const summary = policy?.summary?.[lang] || policy?.summary?.en || "";
-  const content = policy?.content?.[lang] || policy?.content?.en || "";
+  const title = localize(policy?.title, lang);
+
+  const summary = localize(policy?.summary, lang);
+
+  const content = localize(policy?.content, lang);
 
   return (
-    <Layout breadcrumbTitle={localize(policy?.title, lang)}>
+    <Layout
+      breadcrumbTitle={title}
+      image={resolvePageBanner("policies", pageBanners)}
+    >
       <section className="policy-details-section sec-pad">
         <div className="auto-container">
           <div className="policy-details-wrapper">
             <div className="policy-details-header centred">
-              {/* <span className="policy-details-badge">{type}</span> */}
-              <h1 style={{ color: "#00024f" }}>{localize(title, lang)}</h1>
+              <h1
+                style={{
+                  color: "#00024f",
+                }}
+              >
+                {title}
+              </h1>
+
               {summary ? (
-                <p className="policy-details-summary">{parse(summary)}</p>
+                <div className="policy-details-summary">{parse(summary)}</div>
               ) : null}
             </div>
 
             <div className="policy-details-body">
               <div className="policy-details-content">
-                {parse(localize(content, lang) || "")}
+                {content ? parse(content) : null}
               </div>
             </div>
           </div>
@@ -43,17 +59,60 @@ export default function PolicyDetailsPage({ policy }) {
 }
 
 export async function getStaticPaths() {
-  const data = await getWebsiteData();
-  return {
-    paths: (data.policies || [])
-      .filter((policy) => policy?.slug)
-      .map((policy) => ({ params: { slug: policy.slug } })),
-    fallback: "blocking",
-  };
+  try {
+    const data = await getWebsiteData();
+
+    const policies = Array.isArray(data?.policies) ? data.policies : [];
+
+    return {
+      paths: policies
+        .filter((policy) => policy?.slug)
+        .map((policy) => ({
+          params: {
+            slug: policy.slug,
+          },
+        })),
+
+      fallback: "blocking",
+    };
+  } catch (error) {
+    console.error("Failed to generate policy paths:", error);
+
+    return {
+      paths: [],
+      fallback: "blocking",
+    };
+  }
 }
 
 export async function getStaticProps({ params }) {
-  const policy = await getPolicyBySlug(params?.slug);
-  if (!policy) return { notFound: true, revalidate: 60 };
-  return { props: { policy }, revalidate: 300 };
+  try {
+    const [policy, pageBanners] = await Promise.all([
+      getPolicyBySlug(params?.slug),
+      getPageBanners(),
+    ]);
+
+    if (!policy) {
+      return {
+        notFound: true,
+        revalidate: 60,
+      };
+    }
+
+    return {
+      props: {
+        policy,
+        pageBanners: pageBanners || {},
+      },
+
+      revalidate: 300,
+    };
+  } catch (error) {
+    console.error("Failed to fetch policy details:", error);
+
+    return {
+      notFound: true,
+      revalidate: 60,
+    };
+  }
 }

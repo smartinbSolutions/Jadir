@@ -5,29 +5,40 @@ import AddButton from "@/components/Global/AddButton";
 import { useCompanies } from "../../hooks/useCompanies";
 import LoadingCard from "../../../components/Global/LoadingCard";
 import ErrorMessageCard from "../../../components/Global/ErrorMessageCard";
-import { imageURL } from "../../../Api/GlobalData";
+import getImageUrl from "../../../utils/getImageUrl";
 
 const AllCompanies = () => {
   const navigate = useNavigate();
 
-  const { companies, isLoading, error, deleteCompany, isDeleting } =
-    useCompanies({ limit: 100 });
+  const {
+    companies = [],
+    isLoading,
+    error,
+    deleteCompany,
+    isDeleting,
+  } = useCompanies({
+    limit: 100,
+  });
 
   const handleDelete = async (id) => {
     try {
       await deleteCompany(id).unwrap();
+
       toast.success("Company deleted successfully");
     } catch (err) {
       console.error(err);
+
       toast.error(err?.data?.message || "Failed to delete company");
     }
   };
 
-  if (isLoading) return <LoadingCard />;
-  if (error) return <ErrorMessageCard />;
-  const withBriefCount = companies.filter(
-    (company) => company?.brief?.en || company?.brief?.ar,
-  ).length;
+  if (isLoading) {
+    return <LoadingCard />;
+  }
+
+  if (error) {
+    return <ErrorMessageCard />;
+  }
 
   return (
     <Container>
@@ -38,24 +49,26 @@ const AllCompanies = () => {
               <span className="inline-flex rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-200">
                 Trusted Companies
               </span>
+
               <h2 className="mt-4 text-2xl font-semibold">
-                Manage the trusted-company logos and short blurbs used across
-                the site
+                Manage trusted company logos and multilingual content
               </h2>
+
               <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-200">
-                Keep brand names, logos, ordering, and short descriptions
-                aligned with the sitemap from the PDF.
+                Keep company names, logos, ordering, and descriptions aligned
+                across English, Arabic, and Turkish.
               </p>
             </div>
           </div>
         </div>
 
         <div className="card card-grid min-w-full rounded-3xl border border-gray-200 shadow-sm">
-          <div className="card-header py-5 flex-wrap">
+          <div className="card-header flex-wrap py-5">
             <div>
               <h3 className="card-title">Company List</h3>
+
               <p className="mt-1 text-sm text-gray-500">
-                Showing {companies.length} logo entries
+                Showing {companies.length} company entries
               </p>
             </div>
 
@@ -71,74 +84,91 @@ const AllCompanies = () => {
                 <thead>
                   <tr>
                     <th className="min-w-[90px]">Logo</th>
+
                     <th className="min-w-[220px]">Name</th>
+
                     <th className="min-w-[100px]">Order</th>
+
                     <th className="w-[120px]">Actions</th>
                   </tr>
                 </thead>
 
                 <tbody>
-                  {companies?.map((company) => (
-                    <tr key={company._id}>
-                      <td>
-                        {company?.logo ? (
-                          <img
-                            src={`${imageURL}/companies/${company.logo}`}
-                            alt={company?.name?.en || "company"}
-                            className="w-[70px] h-[70px] rounded object-contain border"
-                          />
-                        ) : (
-                          <span className="text-gray-400 text-sm">No logo</span>
-                        )}
-                      </td>
+                  {companies.map((company) => {
+                    const companyName =
+                      company?.name?.en ||
+                      company?.name?.ar ||
+                      company?.name?.tr ||
+                      "-";
 
-                      <td>
-                        <span className="text-sm font-medium text-gray-800">
-                          {company?.name?.en ||
-                            company?.name?.ar ||
-                            "-"}
-                        </span>
-                      </td>
+                    const logoUrl = getImageUrl(company?.imageUrl);
 
-                      <td>{company?.order ?? 0}</td>
+                    return (
+                      <tr key={company?._id}>
+                        <td>
+                          {logoUrl ? (
+                            <img
+                              src={logoUrl}
+                              alt={companyName}
+                              className="h-[70px] w-[70px] rounded border object-contain"
+                            />
+                          ) : (
+                            <span className="text-sm text-gray-400">
+                              No logo
+                            </span>
+                          )}
+                        </td>
 
-                      <td>
-                        <div className="flex gap-3">
-                          <Tooltip title="Edit" placement="top">
-                            <button
-                              className="cursor-pointer"
-                              onClick={() =>
-                                navigate(`/update-company/${company._id}`)
-                              }
-                            >
-                              <i className="ki-filled ki-notepad-edit text-xl" />
-                            </button>
-                          </Tooltip>
+                        <td>
+                          <div>
+                            <span className="text-sm font-medium text-gray-800">
+                              {companyName}
+                            </span>
+                          </div>
+                        </td>
 
-                          <Tooltip title="Delete" placement="top">
-                            <button
-                              className="cursor-pointer text-red-500"
-                              onClick={() => handleDelete(company._id)}
-                              disabled={isDeleting}
-                            >
-                              <i className="ki-filled ki-trash text-xl" />
-                            </button>
-                          </Tooltip>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                        <td>{company?.order ?? 0}</td>
 
-                  {!companies?.length && (
+                        <td>
+                          <div className="flex gap-3">
+                            <Tooltip title="Edit" placement="top">
+                              <button
+                                type="button"
+                                className="cursor-pointer"
+                                onClick={() =>
+                                  navigate(`/update-company/${company._id}`)
+                                }
+                              >
+                                <i className="ki-filled ki-notepad-edit text-xl" />
+                              </button>
+                            </Tooltip>
+
+                            <Tooltip title="Delete" placement="top">
+                              <button
+                                type="button"
+                                className="cursor-pointer text-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+                                onClick={() => handleDelete(company._id)}
+                                disabled={isDeleting}
+                              >
+                                <i className="ki-filled ki-trash text-xl" />
+                              </button>
+                            </Tooltip>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+
+                  {!companies.length ? (
                     <tr>
                       <td
-                        colSpan={6}
-                        className="text-center py-6 text-gray-500"
+                        colSpan={4}
+                        className="py-6 text-center text-gray-500"
                       >
                         No companies found
                       </td>
                     </tr>
-                  )}
+                  ) : null}
                 </tbody>
               </table>
             </div>

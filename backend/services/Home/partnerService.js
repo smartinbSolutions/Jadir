@@ -5,19 +5,71 @@ const { uploadSingleImage } = require("../../middlewares/uploadingImage");
 const { v4: uuidv4 } = require("uuid");
 const sharp = require("sharp");
 const safeParseJSON = require("../../utils/safeParseJson");
+const fs = require("fs");
+const path = require("path");
+
+const PARTNERS_UPLOAD_DIRECTORY = path.resolve(
+  process.cwd(),
+  "uploads",
+  "partners",
+);
+
+const deletePartnerImageFile = async (filename) => {
+  if (!filename || typeof filename !== "string") return;
+
+  const safeFilename = path.basename(filename);
+
+  const filePath = path.join(PARTNERS_UPLOAD_DIRECTORY, safeFilename);
+
+  try {
+    await fs.promises.unlink(filePath);
+  } catch (error) {
+    if (error.code !== "ENOENT") {
+      console.error(`Failed to delete partner image: ${filePath}`, error);
+    }
+  }
+};
+
+const escapeRegex = (value = "") => {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+};
+
+const parsePartnerBody = (body) => {
+  if (body.order !== undefined) {
+    body.order = Number(body.order) || 0;
+  }
+
+  if (body.title !== undefined) {
+    body.title = safeParseJSON(body.title, "title");
+  }
+
+  if (body.brief !== undefined) {
+    body.brief = safeParseJSON(body.brief, "brief");
+  }
+
+  if (body.testimonial !== undefined) {
+    body.testimonial = safeParseJSON(body.testimonial, "testimonial");
+  }
+};
 
 exports.uploadPartnerImage = uploadSingleImage("img");
+
 exports.resizePartnerImage = asyncHandler(async (req, res, next) => {
   if (!req.file) return next();
+
+  fs.mkdirSync(PARTNERS_UPLOAD_DIRECTORY, {
+    recursive: true,
+  });
 
   const filename = `partner-${uuidv4()}-${Date.now()}.webp`;
 
   await sharp(req.file.buffer)
     .toFormat("webp")
     .webp({ quality: 70 })
-    .toFile(`uploads/partners/${filename}`);
+    .toFile(path.join(PARTNERS_UPLOAD_DIRECTORY, filename));
 
   req.body.img = filename;
+
   next();
 });
 
@@ -27,49 +79,63 @@ exports.getPartners = asyncHandler(async (req, res) => {
 
   const query = {};
 
-  if (keyword && keyword.trim() !== "") {
-    const safeKeyword = keyword.trim();
+  if (keyword?.trim()) {
+    const keywordRegex = {
+      $regex: escapeRegex(keyword.trim()),
+      $options: "i",
+    };
 
     query.$or = [
-      { "title.ar": { $regex: safeKeyword, $options: "i" } },
-      { "title.en": { $regex: safeKeyword, $options: "i" } },
-      { "brief.ar": { $regex: safeKeyword, $options: "i" } },
-      { "brief.en": { $regex: safeKeyword, $options: "i" } },
-      { "testimonial.ar": { $regex: safeKeyword, $options: "i" } },
-      { "testimonial.en": { $regex: safeKeyword, $options: "i" } },
+      { "title.ar": keywordRegex },
+      { "title.en": keywordRegex },
+      { "title.tr": keywordRegex },
+
+      { "brief.ar": keywordRegex },
+      { "brief.en": keywordRegex },
+      { "brief.tr": keywordRegex },
+
+      { "testimonial.ar": keywordRegex },
+      { "testimonial.en": keywordRegex },
+      { "testimonial.tr": keywordRegex },
     ];
   }
 
-  const pageNum = parseInt(page, 10);
-  const limitNum = parseInt(limit, 10);
+  const pageNum = Math.max(parseInt(page, 10) || 1, 1);
+
+  const limitNum = Math.max(parseInt(limit, 10) || 10, 1);
+
   const skip = (pageNum - 1) * limitNum;
 
   const [partners, total] = await Promise.all([
     partnersModel.find(query).sort(sort).skip(skip).limit(limitNum),
+
     partnersModel.countDocuments(query),
   ]);
 
   res.status(200).json({
     status: true,
-    message:
-      partners.length > 0
-        ? "Partners fetched successfully"
-        : "No matching results",
+
+    message: partners.length
+      ? "Partners fetched successfully"
+      : "No matching results",
+
     pagination: {
       totalItems: total,
       totalPages: Math.ceil(total / limitNum),
       currentPage: pageNum,
       itemsPerPage: limitNum,
     },
+
     data: partners,
   });
 });
 
 // Public list
 exports.getPublicPartners = asyncHandler(async (req, res) => {
-  const partners = await partnersModel
-    .find({})
-    .sort({ order: 1, createdAt: -1 });
+  const partners = await partnersModel.find({}).sort({
+    order: 1,
+    createdAt: -1,
+  });
 
   res.status(200).json({
     status: true,
@@ -78,18 +144,8 @@ exports.getPublicPartners = asyncHandler(async (req, res) => {
 });
 
 exports.createPartner = asyncHandler(async (req, res) => {
-  if (req.body.order !== undefined) {
-    req.body.order = Number(req.body.order) || 0;
-  }
-  if (req.body.title !== undefined) {
-    req.body.title = safeParseJSON(req.body.title, "title");
-  }
-  if (req.body.brief !== undefined) {
-    req.body.brief = safeParseJSON(req.body.brief, "brief");
-  }
-  if (req.body.testimonial !== undefined) {
-    req.body.testimonial = safeParseJSON(req.body.testimonial, "testimonial");
-  }
+  parsePartnerBody(req.body);
+
   const partner = await partnersModel.create(req.body);
 
   res.status(201).json({
@@ -118,20 +174,31 @@ exports.updatePartner = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
 
   if (!id) {
-    return next(new ApiError(`No ID provided`, 404));
+    await deletePartnerImageFile(req.body.img);
+
+    return next(new ApiError("No ID provided", 400));
   }
 
-  if (req.body.order !== undefined) {
-    req.body.order = Number(req.body.order) || 0;
+  const existingPartner = await partnersModel.findById(id);
+
+  if (!existingPartner) {
+    // حذف الصورة الجديدة التي تم إنشاؤها قبل الوصول للخدمة
+    await deletePartnerImageFile(req.body.img);
+
+    return next(new ApiError(`No Partner found for this id: ${id}`, 404));
   }
-  if (req.body.title !== undefined) {
-    req.body.title = safeParseJSON(req.body.title, "title");
-  }
-  if (req.body.brief !== undefined) {
-    req.body.brief = safeParseJSON(req.body.brief, "brief");
-  }
-  if (req.body.testimonial !== undefined) {
-    req.body.testimonial = safeParseJSON(req.body.testimonial, "testimonial");
+
+  const removeImg =
+    req.body.removeImg === true || req.body.removeImg === "true";
+
+  // حقل تحكم لا يتم تخزينه
+  delete req.body.removeImg;
+
+  parsePartnerBody(req.body);
+
+  // الصورة الجديدة تأخذ الأولوية
+  if (removeImg && !req.body.img) {
+    req.body.img = "";
   }
 
   const updatedPartner = await partnersModel.findByIdAndUpdate(id, req.body, {
@@ -140,7 +207,14 @@ exports.updatePartner = asyncHandler(async (req, res, next) => {
   });
 
   if (!updatedPartner) {
+    await deletePartnerImageFile(req.body.img);
+
     return next(new ApiError(`No Partner found for this id: ${id}`, 404));
+  }
+
+  // حذف الصورة القديمة في حالة الحذف أو الاستبدال
+  if (existingPartner.img && existingPartner.img !== updatedPartner.img) {
+    await deletePartnerImageFile(existingPartner.img);
   }
 
   res.status(200).json({
@@ -153,11 +227,13 @@ exports.updatePartner = asyncHandler(async (req, res, next) => {
 exports.deletePartner = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
 
-  const partner = await partnersModel.findByIdAndDelete(id);
+  const deletedPartner = await partnersModel.findByIdAndDelete(id);
 
-  if (!partner) {
+  if (!deletedPartner) {
     return next(new ApiError(`No Partner found for this id: ${id}`, 404));
   }
+
+  await deletePartnerImageFile(deletedPartner.img);
 
   res.status(200).json({
     status: true,

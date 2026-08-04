@@ -16,4 +16,19 @@ const projectsSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+projectsSchema.virtual("imageUrl").get(function () {
+  if (!this.image) return "";
+
+  return `/uploads/projects/${this.image}`;
+});
+
+projectsSchema.set("toJSON", {
+  virtuals: true,
+});
+
+projectsSchema.set("toObject", {
+  virtuals: true,
+});
+
+
 module.exports = mongoose.model("projects", projectsSchema);

@@ -23,6 +23,10 @@ const PAGE_TITLES = [
   { path: "/update-value/:id", title: "Update Value" },
   { path: "/edit-footer", title: "Footer" },
   { path: "/all-messages", title: "Messages" },
+  {
+    path: "/reply-message/:id",
+    title: "Reply to Message",
+  },
   { path: "/edit-contact-us", title: "Contact Info" },
   { path: "/all-users", title: "Users" },
   { path: "/add-user", title: "Add User" },

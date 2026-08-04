@@ -58,6 +58,7 @@ const AllStatistics = () => {
                         <span className="text-sm font-medium text-gray-800">
                           {item?.title?.en ||
                             item?.title?.ar ||
+                            item?.title?.tr ||
                             "-"}
                         </span>
                       </td>
@@ -70,6 +71,7 @@ const AllStatistics = () => {
                         <span className="text-sm text-gray-700">
                           {item?.suffix?.en ||
                             item?.suffix?.ar ||
+                            item?.suffix?.tr ||
                             "-"}
                         </span>
                       </td>
@@ -77,6 +79,7 @@ const AllStatistics = () => {
                         <span className="text-sm text-gray-700 line-clamp-2">
                           {item?.description?.en ||
                             item?.description?.ar ||
+                            item?.description?.tr ||
                             "-"}
                         </span>
                       </td>

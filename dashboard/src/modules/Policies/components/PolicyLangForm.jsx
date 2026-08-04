@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { TextEditor } from "../../../components/TextEditor";
 
 const PolicyLangForm = ({
   language,
@@ -13,6 +14,8 @@ const PolicyLangForm = ({
     content: contentValue || "",
   });
 
+  const isArabic = language === "ar";
+
   useEffect(() => {
     setLocalState({
       title: titleValue || "",
@@ -22,25 +25,33 @@ const PolicyLangForm = ({
   }, [titleValue, summaryValue, contentValue]);
 
   const handleChange = (key, value) => {
-    setLocalState((prev) => ({ ...prev, [key]: value }));
+    setLocalState((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+
     onLangChange?.(key, language, value);
   };
 
   return (
     <div className="card-table scrollable-x-auto pb-3">
-      <table className="table-auto w-full text-sm text-gray-600">
+      <table className="w-full table-auto text-sm text-gray-600">
         <tbody>
           <tr>
             <td className="p-2 pt-4">
               <div className="input-group">
                 <span className="btn btn-input w-[20%] capitalize">
-                  Title ({language})
+                  Title ({language.toUpperCase()})
                 </span>
+
                 <input
                   type="text"
                   className="input"
+                  dir={isArabic ? "rtl" : "ltr"}
                   value={localState.title}
-                  onChange={(e) => handleChange("title", e.target.value)}
+                  onChange={(event) =>
+                    handleChange("title", event.target.value)
+                  }
                   placeholder={`Enter title in ${language.toUpperCase()}`}
                 />
               </div>
@@ -49,14 +60,19 @@ const PolicyLangForm = ({
 
           <tr>
             <td className="p-2 pt-4">
-              <div className="input-group">
+              <div className="input-group items-start">
                 <span className="btn btn-input w-[20%] capitalize">
-                  Summary ({language})
+                  Summary ({language.toUpperCase()})
                 </span>
+
                 <textarea
                   value={localState.summary}
-                  onChange={(e) => handleChange("summary", e.target.value)}
-                  className="input min-h-[180px] w-full p-3 bg-white text-black min-h-[180px] w-full pb-[3rem] tracking-[1px] leading-[20px]"
+                  dir={isArabic ? "rtl" : "ltr"}
+                  onChange={(event) =>
+                    handleChange("summary", event.target.value)
+                  }
+                  placeholder={`Enter summary in ${language.toUpperCase()}`}
+                  className="input min-h-[180px] w-full bg-white p-3 pb-[3rem] text-black tracking-[1px] leading-[20px]"
                 />
               </div>
             </td>
@@ -64,15 +80,25 @@ const PolicyLangForm = ({
 
           <tr>
             <td className="p-2 pt-4">
-              <div className="input-group">
+              <div className="input-group items-start">
                 <span className="btn btn-input w-[20%] capitalize">
-                  Content ({language})
+                  Content ({language.toUpperCase()})
                 </span>
-                <textarea
-                  value={localState.content}
-                  onChange={(e) => handleChange("content", e.target.value)}
-                  className="input min-h-[180px] w-full p-3 bg-white text-black min-h-[240px] w-full pb-[3rem] tracking-[1px] leading-[20px]"
-                />
+
+                <div className="w-[80%]">
+                  <TextEditor
+                    language={language}
+                    value={localState.content}
+                    onChange={(value) => handleChange("content", value)}
+                    placeholder={`Enter content in ${language.toUpperCase()}`}
+                    enableFontSize
+                    enableColor
+                    enableBackground
+                    enableDirection
+                    enableImage={false}
+                    className="min-h-[240px] w-full bg-white text-black pb-[3rem]"
+                  />
+                </div>
               </div>
             </td>
           </tr>

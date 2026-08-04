@@ -5,6 +5,7 @@ const multilingualArraySchema = new mongoose.Schema(
   {
     ar: { type: [String], default: [] },
     en: { type: [String], default: [] },
+    tr: { type: [String], default: [] },
   },
   { _id: false },
 );
@@ -36,5 +37,19 @@ const serviceSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+
+serviceSchema.virtual("bannerImageUrl").get(function () {
+  if (!this.bannerImage) return "";
+
+  return `/uploads/ourServices/${this.bannerImage}`;
+});
+
+serviceSchema.set("toJSON", {
+  virtuals: true,
+});
+
+serviceSchema.set("toObject", {
+  virtuals: true,
+});
 
 module.exports = mongoose.model("service", serviceSchema);

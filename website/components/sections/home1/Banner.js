@@ -4,15 +4,16 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
-import { imageURL } from "@/api/GlobalData";
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
+import getImageUrl from "@/components/utils/getImageUrl";
 
 export default function Banner({ HomeSlides }) {
   const prevRef = useRef(null);
   const nextRef = useRef(null);
   const { i18n } = useTranslation();
   const lang = i18n.language || "en";
+  console.log(HomeSlides);
 
   return (
     <section className="banner-section p_relative">
@@ -53,7 +54,7 @@ export default function Banner({ HomeSlides }) {
             <div
               className="image-layer"
               style={{
-                backgroundImage: `url(${`${imageURL}homeSlider/${slide?.img}`})`,
+                backgroundImage: `url(${getImageUrl(slide.imageUrl)})`,
               }}
             />
           </SwiperSlide>

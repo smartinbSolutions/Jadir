@@ -18327,3 +18327,28 @@ div > .service-block-one.block-one {
 .language-option-btn:hover {
   background-color: #57c396;
 }
+
+.noto-kufi-app {
+  --urbanist: var(--font-noto-kufi-arabic);
+  --mulish: var(--font-noto-kufi-arabic);
+  --dM-sans: var(--font-noto-kufi-arabic);
+  --dM_Sans: var(--font-noto-kufi-arabic);
+
+  font-family: var(--font-noto-kufi-arabic), sans-serif;
+}
+
+.noto-kufi-app a,
+.noto-kufi-app p,
+.noto-kufi-app h1,
+.noto-kufi-app h2,
+.noto-kufi-app h3,
+.noto-kufi-app h4,
+.noto-kufi-app h5,
+.noto-kufi-app h6,
+.noto-kufi-app button,
+.noto-kufi-app input,
+.noto-kufi-app textarea,
+.noto-kufi-app select,
+.noto-kufi-app label {
+  font-family: var(--font-noto-kufi-arabic), sans-serif;
+}

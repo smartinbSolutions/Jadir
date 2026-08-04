@@ -15,6 +15,7 @@ const PAGE_KEYS = [
   "careers",
   "search",
   "contact",
+  "policies"
 ];
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024;

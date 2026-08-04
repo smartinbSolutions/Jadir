@@ -625,6 +625,7 @@ html[dir="rtl"] .about-value-title {
     border-color 0.28s ease;
 }
 
+
 .jadwa-founder-slide:hover {
   transform: translateY(-4px);
   border-color: rgba(0, 106, 253, 0.16);

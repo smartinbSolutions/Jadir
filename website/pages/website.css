@@ -76,7 +76,8 @@
 }
 body {
   color: var(--site-text);
-  background: radial-gradient(
+  background:
+    radial-gradient(
       circle at top left,
       rgba(0, 106, 253, 0.06),
       transparent 28%
@@ -643,11 +644,8 @@ body {
 
 .jadwa-detail-hero-content {
   padding: 42px;
-  background: linear-gradient(
-      180deg,
-      rgba(0, 106, 253, 0.045),
-      rgba(255, 255, 255, 0)
-    ),
+  background:
+    linear-gradient(180deg, rgba(0, 106, 253, 0.045), rgba(255, 255, 255, 0)),
     #fff;
 }
 
@@ -704,6 +702,37 @@ body {
 .jadwa-detail-related-card span {
   color: var(--site-blue);
   font-weight: 800;
+}
+
+.jadwa-featured-left {
+  left: 4px;
+}
+
+.jadwa-featured-right {
+  right: 4px;
+}
+
+.jadwa-featured-swiper-wrap,
+.jadwa-featured-swiper-wrap .swiper,
+.jadwa-featured-swiper {
+  height: auto;
+}
+
+.jadwa-featured-swiper .swiper-wrapper,
+.jadwa-featured-swiper .swiper-slide {
+  height: auto;
+}
+
+.jadwa-featured-swiper {
+  padding-bottom: 54px;
+}
+
+.jadwa-featured-swiper .swiper-pagination {
+  bottom: 8px !important;
+}
+
+.jadwa-featured-nav {
+  top: calc(50% - 27px);
 }
 
 .site-pill {
@@ -776,11 +805,8 @@ body {
 
 .site-about-preview {
   overflow: hidden;
-  background: linear-gradient(
-      180deg,
-      rgba(0, 106, 253, 0.035),
-      rgba(255, 255, 255, 0)
-    ),
+  background:
+    linear-gradient(180deg, rgba(0, 106, 253, 0.035), rgba(255, 255, 255, 0)),
     #fff;
 }
 
@@ -892,7 +918,9 @@ body {
   background: #fff;
   box-shadow: 0 18px 44px rgba(0, 2, 79, 0.08);
   color: var(--site-text);
-  transition: transform 0.25s ease, box-shadow 0.25s ease,
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
     border-color 0.25s ease;
 }
 
@@ -1054,7 +1082,9 @@ body {
 .site-project-showcase .site-media-card,
 .site-blog-showcase .site-media-card {
   box-shadow: 0 18px 44px rgba(0, 2, 79, 0.08);
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
 }
 
 .site-project-showcase .site-media-card:hover,

@@ -1,7 +1,7 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Container, Tooltip } from "@mui/material";
 import { ToastContainer, toast } from "react-toastify";
-import ReplyMessageModal from "./ReplyMessageModal";
 import ViewMessageModal from "./ViewMessageModal";
 import { useMessages } from "../../hooks/useMessages";
 import LoadingCard from "../../../components/Global/LoadingCard";
@@ -19,12 +19,24 @@ const REQUEST_TYPE_LABELS = {
 };
 
 const AllMessages = () => {
-  const { messages, isLoading, error, deleteMessage, isDeleting, refetch } =
-    useMessages({ limit: 100 });
+  const navigate = useNavigate();
+
+  const {
+    messages = [],
+    isLoading,
+    isFetching,
+    error,
+    deleteMessage,
+    isDeleting,
+    refetch,
+  } = useMessages({
+    limit: 100,
+  });
 
   const [selectedMessage, setSelectedMessage] = useState(null);
+
   const [openViewModal, setOpenViewModal] = useState(false);
-  const [openReplyModal, setOpenReplyModal] = useState(false);
+
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -33,23 +45,40 @@ const AllMessages = () => {
     setOpenViewModal(true);
   };
 
+  const handleCloseViewModal = () => {
+    setOpenViewModal(false);
+    setSelectedMessage(null);
+  };
+
   const handleReply = (messageItem) => {
-    setSelectedMessage(messageItem);
-    setOpenReplyModal(true);
+    if (!messageItem?._id) return;
+
+    navigate(`/reply-message/${messageItem._id}`);
   };
 
   const handleDelete = async (id) => {
+    if (!id || isDeleting) return;
+
     try {
       await deleteMessage(id).unwrap();
+
       toast.success("Message deleted successfully");
     } catch (err) {
       console.error(err);
+
       toast.error(err?.data?.message || "Failed to delete message");
     }
   };
 
-  if (isLoading) return <LoadingCard />;
-  if (error) return <ErrorMessageCard />;
+  if (isLoading) {
+    return <LoadingCard />;
+  }
+
+  if (error) {
+    return <ErrorMessageCard />;
+  }
+
+  const normalizedSearchTerm = searchTerm.trim().toLowerCase();
 
   const filteredMessages = messages.filter((messageItem) => {
     const matchesStatus =
@@ -65,25 +94,20 @@ const AllMessages = () => {
       messageItem?.requestType,
       messageItem?.message,
       messageItem?.attachment?.originalName,
+
       messageItem?.service?.title?.en,
       messageItem?.service?.title?.ar,
+      messageItem?.service?.title?.tr,
     ]
       .filter(Boolean)
       .join(" ")
       .toLowerCase();
 
-    const matchesSearch = haystack.includes(searchTerm.trim().toLowerCase());
+    const matchesSearch =
+      !normalizedSearchTerm || haystack.includes(normalizedSearchTerm);
 
     return matchesStatus && matchesSearch;
   });
-
-  const repliedCount = messages.filter(
-    (messageItem) => messageItem?.isReplied,
-  ).length;
-  const newCount = messages.length - repliedCount;
-  const attachmentCount = messages.filter(
-    (messageItem) => messageItem?.attachment?.originalName,
-  ).length;
 
   return (
     <Container>
@@ -94,9 +118,11 @@ const AllMessages = () => {
               <span className="inline-flex rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-200">
                 Inbox Management
               </span>
+
               <h2 className="mt-4 text-2xl font-semibold">
                 Review and respond to incoming requests faster
               </h2>
+
               <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-200">
                 Search, filter, and triage messages from one place instead of
                 scanning a raw table.
@@ -105,36 +131,69 @@ const AllMessages = () => {
           </div>
         </div>
 
+        {/* Search and filters */}
         <div className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
-          <div className="grid gap-4 lg:grid-cols-[1fr_auto_auto]">
+          <div className="grid items-end gap-4 lg:grid-cols-[minmax(0,1fr)_220px_auto]">
             <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
               <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">
                 Search Inbox
               </label>
-              <input
-                type="text"
-                className="input"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search by name, email, subject, service, or attachment"
-              />
+
+              <div className="relative">
+                <i className="ki-outline ki-magnifier absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+
+                <input
+                  type="text"
+                  className="input h-[42px] w-full pl-10"
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  placeholder="Search by name, email, subject, service, or attachment"
+                />
+              </div>
             </div>
 
-            <div className="flex items-end">
-              <button
-                className="btn btn-primary w-full lg:w-auto"
-                onClick={refetch}
+            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">
+                Status
+              </label>
+
+              <select
+                className="input h-[42px] w-full"
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value)}
               >
-                Refresh Inbox
+                <option value="all">All messages</option>
+
+                <option value="new">New</option>
+
+                <option value="replied">Replied</option>
+              </select>
+            </div>
+            <div className="flex items-end lg:pb-4">
+              <button
+                type="button"
+                className="btn btn-primary h-[42px] min-h-0 w-full whitespace-nowrap lg:w-auto"
+                onClick={() => refetch()}
+                disabled={isFetching}
+              >
+                <i
+                  className={`ki-outline ki-arrows-circle mr-1 ${
+                    isFetching ? "animate-spin" : ""
+                  }`}
+                />
+
+                {isFetching ? "Refreshing..." : "Refresh Inbox"}
               </button>
             </div>
           </div>
         </div>
 
+        {/* Messages table */}
         <div className="card card-grid min-w-full rounded-3xl border border-gray-200 shadow-sm">
-          <div className="card-header py-5 flex-wrap">
+          <div className="card-header flex-wrap py-5">
             <div>
               <h3 className="card-title">Messages</h3>
+
               <p className="mt-1 text-sm text-gray-500">
                 Showing {filteredMessages.length} of {messages.length} messages
               </p>
@@ -147,107 +206,139 @@ const AllMessages = () => {
                 <thead>
                   <tr>
                     <th className="min-w-[180px]">Name</th>
+
                     <th className="min-w-[220px]">Email</th>
+
                     <th className="min-w-[180px]">Request</th>
+
                     <th className="min-w-[180px]">Attachment</th>
+
                     <th className="min-w-[140px]">Status</th>
+
                     <th className="w-[160px]">Actions</th>
                   </tr>
                 </thead>
 
                 <tbody>
-                  {filteredMessages?.map((messageItem) => (
-                    <tr key={messageItem._id}>
-                      <td>
-                        <div className="space-y-1">
-                          <span className="text-sm font-medium text-gray-800">
-                            {messageItem?.name || "-"}
-                          </span>
-                          <div className="text-xs text-gray-500">
-                            {messageItem?.phone || "No phone provided"}
-                          </div>
-                        </div>
-                      </td>
+                  {filteredMessages.length ? (
+                    filteredMessages.map((messageItem) => {
+                      const requestType =
+                        REQUEST_TYPE_LABELS[messageItem?.requestType] ||
+                        messageItem?.requestType ||
+                        "-";
 
-                      <td>{messageItem?.email || "-"}</td>
+                      const serviceName =
+                        messageItem?.service?.title?.en ||
+                        messageItem?.service?.title?.ar ||
+                        messageItem?.service?.title?.tr ||
+                        messageItem?.subject ||
+                        "No linked service";
 
-                      <td>
-                        <div className="space-y-1">
-                          <div className="text-sm text-gray-800">
-                            {REQUEST_TYPE_LABELS[messageItem?.requestType] ||
-                              messageItem?.requestType ||
-                              "-"}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {messageItem?.service?.title?.en ||
-                              messageItem?.service?.title?.ar ||
-                              messageItem?.subject ||
-                              "No linked service"}
-                          </div>
-                        </div>
-                      </td>
+                      return (
+                        <tr key={messageItem?._id}>
+                          <td>
+                            <div className="space-y-1">
+                              <span className="text-sm font-medium text-gray-800">
+                                {messageItem?.name || "-"}
+                              </span>
 
-                      <td>
-                        {messageItem?.attachment?.originalName ? (
-                          <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
-                            {messageItem.attachment.originalName}
-                          </span>
-                        ) : (
-                          "-"
-                        )}
-                      </td>
+                              <div className="text-xs text-gray-500">
+                                {messageItem?.phone || "No phone provided"}
+                              </div>
+                            </div>
+                          </td>
 
-                      <td>
-                        <span
-                          className={`badge ${
-                            messageItem?.isReplied
-                              ? "badge-success"
-                              : "badge-warning"
-                          }`}
-                        >
-                          {messageItem?.isReplied ? "Replied" : "New"}
-                        </span>
-                      </td>
+                          <td>
+                            <span className="text-sm text-gray-700">
+                              {messageItem?.email || "-"}
+                            </span>
+                          </td>
 
-                      <td>
-                        <div className="flex gap-3">
-                          <Tooltip title="View" placement="top">
-                            <button
-                              className="cursor-pointer"
-                              onClick={() => handleView(messageItem)}
+                          <td>
+                            <div className="space-y-1">
+                              <div className="text-sm text-gray-800">
+                                {requestType}
+                              </div>
+
+                              <div className="text-xs text-gray-500">
+                                {serviceName}
+                              </div>
+                            </div>
+                          </td>
+
+                          <td>
+                            {messageItem?.attachment?.originalName ? (
+                              <span className="inline-block max-w-[180px] truncate rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
+                                {messageItem.attachment.originalName}
+                              </span>
+                            ) : (
+                              <span className="text-sm text-gray-400">
+                                No attachment
+                              </span>
+                            )}
+                          </td>
+
+                          <td>
+                            <span
+                              className={`badge ${
+                                messageItem?.isReplied
+                                  ? "badge-success"
+                                  : "badge-warning"
+                              }`}
                             >
-                              <i className="ki-filled ki-eye text-xl" />
-                            </button>
-                          </Tooltip>
+                              {messageItem?.isReplied ? "Replied" : "New"}
+                            </span>
+                          </td>
 
-                          <Tooltip title="Reply" placement="top">
-                            <button
-                              className="cursor-pointer text-blue-500"
-                              onClick={() => handleReply(messageItem)}
-                            >
-                              <i className="ki-filled ki-message-text-2 text-xl" />
-                            </button>
-                          </Tooltip>
+                          <td>
+                            <div className="flex items-center gap-3">
+                              <Tooltip title="View" placement="top">
+                                <button
+                                  type="button"
+                                  className="cursor-pointer"
+                                  onClick={() => handleView(messageItem)}
+                                >
+                                  <i className="ki-filled ki-eye text-xl" />
+                                </button>
+                              </Tooltip>
 
-                          <Tooltip title="Delete" placement="top">
-                            <button
-                              className="cursor-pointer text-red-500"
-                              onClick={() => handleDelete(messageItem._id)}
-                              disabled={isDeleting}
-                            >
-                              <i className="ki-filled ki-trash text-xl" />
-                            </button>
-                          </Tooltip>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                              <Tooltip
+                                title={
+                                  messageItem?.isReplied
+                                    ? "Edit Reply"
+                                    : "Reply"
+                                }
+                                placement="top"
+                              >
+                                <button
+                                  type="button"
+                                  className="cursor-pointer text-blue-500"
+                                  onClick={() => handleReply(messageItem)}
+                                >
+                                  <i className="ki-filled ki-message-text-2 text-xl" />
+                                </button>
+                              </Tooltip>
 
-                  {!filteredMessages?.length && (
+                              <Tooltip title="Delete" placement="top">
+                                <button
+                                  type="button"
+                                  className="cursor-pointer text-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+                                  onClick={() => handleDelete(messageItem?._id)}
+                                  disabled={isDeleting}
+                                >
+                                  <i className="ki-filled ki-trash text-xl" />
+                                </button>
+                              </Tooltip>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
                     <tr>
                       <td
                         colSpan={6}
-                        className="text-center py-6 text-gray-500"
+                        className="py-6 text-center text-gray-500"
                       >
                         No messages found
                       </td>
@@ -262,13 +353,7 @@ const AllMessages = () => {
 
       <ViewMessageModal
         isOpen={openViewModal}
-        onClose={() => setOpenViewModal(false)}
-        messageItem={selectedMessage}
-      />
-
-      <ReplyMessageModal
-        isOpen={openReplyModal}
-        onClose={() => setOpenReplyModal(false)}
+        onClose={handleCloseViewModal}
         messageItem={selectedMessage}
       />
 

@@ -41,13 +41,18 @@ export default function Header({
   );
 
   useEffect(() => {
-    const match = document.cookie.match(/site_lang=(\w+)/);
+    const match = document.cookie.match(
+      /(?:^|;\s*)site_lang=(en|ar|tr)(?:;|$)/,
+    );
 
+    // تطبيق اللغة التي اختارها المستخدم سابقاً
     if (match) {
       setActiveLang(match[1]);
       return;
     }
 
+    // في حال عدم وجود لغة محفوظة، يبقى الموقع بالإنجليزية
+    // واكتشاف الموقع يقدم اقتراحاً فقط
     fetch("https://ipapi.co/json/")
       .then((res) => res.json())
       .then((data) => {
@@ -60,7 +65,6 @@ export default function Header({
         }
 
         setSuggestedLang(userLang);
-        setActiveLang(userLang);
         setShowModal(true);
 
         const location = `${data?.city || "Unknown City"}, ${
@@ -71,7 +75,6 @@ export default function Header({
       })
       .catch(() => {
         setSuggestedLang("en");
-        setActiveLang("en");
         setShowModal(true);
         setUserLocation("Unknown Location");
       });
@@ -187,17 +190,26 @@ export default function Header({
                   </div>
 
                   <div className="jadwa-header-main-row">
-                    <nav className="jadwa-nav main-menu navbar-expand-md navbar-light">
-                      <div
-                        className="collapse navbar-collapse clearfix"
-                        id="navbarSupportedContent"
-                      >
-                        <Menu />
-                      </div>
-                    </nav>
+                    {!isMobile && openSearch ? (
+                      <SearchBox
+                        autoFocus
+                        variant="desktop"
+                        className="jadwa-header-search"
+                        onClose={() => setOpenSearch(false)}
+                      />
+                    ) : (
+                      <nav className="jadwa-nav main-menu navbar-expand-md navbar-light">
+                        <div
+                          className="collapse navbar-collapse clearfix"
+                          id="navbarSupportedContent"
+                        >
+                          <Menu />
+                        </div>
+                      </nav>
+                    )}
 
                     <div className="jadwa-header-actions">
-                      {isMobile ? null : !openSearch ? (
+                      {!isMobile && !openSearch && (
                         <button
                           type="button"
                           aria-label="Open search"
@@ -206,12 +218,6 @@ export default function Header({
                         >
                           <i className="fa-solid fa-magnifying-glass" />
                         </button>
-                      ) : (
-                        <SearchBox
-                          autoFocus
-                          variant="desktop"
-                          onClose={() => setOpenSearch(false)}
-                        />
                       )}
 
                       <Link href="/contact" className="jadwa-invest-btn">

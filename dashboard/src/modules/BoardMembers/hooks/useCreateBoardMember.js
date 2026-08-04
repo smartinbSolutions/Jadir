@@ -2,10 +2,12 @@ import { useState } from "react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { useBoardMembers } from "../../hooks/useBoardMembers";
+import { useEffect } from "react";
 
 const emptyLangState = {
   en: "",
   ar: "",
+  tr: "",
 };
 
 const useCreateBoardMember = () => {
@@ -37,22 +39,37 @@ const useCreateBoardMember = () => {
   const handleImageChange = (selectedAvatar) => {
     const file = selectedAvatar?.[0]?.file;
 
+    if (imgPreview?.startsWith("blob:")) {
+      URL.revokeObjectURL(imgPreview);
+    }
+
     if (file) {
       setImg(file);
       setImgPreview(URL.createObjectURL(file));
     } else {
       setImg(null);
-      setImgPreview(null);
+      setImgPreview("");
     }
   };
+  useEffect(() => {
+    return () => {
+      if (imgPreview?.startsWith("blob:")) {
+        URL.revokeObjectURL(imgPreview);
+      }
+    };
+  }, [imgPreview]);
 
   const resetForm = () => {
+    if (imgPreview?.startsWith("blob:")) {
+      URL.revokeObjectURL(imgPreview);
+    }
     setName({ ...emptyLangState });
     setPosition({ ...emptyLangState });
     setDescription({ ...emptyLangState });
     setImg(null);
     setImgPreview("");
     setOrder(0);
+    setIsBoardMember(true);
   };
 
   const handleSave = async () => {

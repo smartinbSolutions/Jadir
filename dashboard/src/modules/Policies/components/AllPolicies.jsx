@@ -32,7 +32,10 @@ const AllPolicies = () => {
           <div className="card-header py-5 flex-wrap">
             <h3 className="card-title">Policies</h3>
             <div className="flex gap-6">
-              <AddButton label="New Policy" onClick={() => navigate("/add-policy")} />
+              <AddButton
+                label="New Policy"
+                onClick={() => navigate("/add-policy")}
+              />
             </div>
           </div>
 
@@ -51,15 +54,18 @@ const AllPolicies = () => {
                 <tbody>
                   {policies.map((policy) => (
                     <tr key={policy._id}>
-                      <td>{policy?.title?.en || policy?.title?.ar || "-"}</td>
-                      <td className="capitalize">{policy?.policyType || "-"}</td>
+                      <td>
+                        {policy?.title?.en ||
+                          policy?.title?.ar ||
+                          policy?.title?.tr ||
+                          "-"}
+                      </td>
+                      <td className="capitalize">
+                        {policy?.policyType || "-"}
+                      </td>
                       <td>{policy?.order ?? 0}</td>
                       <td>
-                        <span
-                          className={`badge ${
-                            "badge-success"
-                          }`}
-                        >
+                        <span className={`badge ${"badge-success"}`}>
                           {"Active"}
                         </span>
                       </td>
@@ -68,7 +74,9 @@ const AllPolicies = () => {
                           <Tooltip title="Edit" placement="top">
                             <button
                               className="cursor-pointer"
-                              onClick={() => navigate(`/update-policy/${policy._id}`)}
+                              onClick={() =>
+                                navigate(`/update-policy/${policy._id}`)
+                              }
                             >
                               <i className="ki-filled ki-notepad-edit text-xl" />
                             </button>
@@ -89,7 +97,10 @@ const AllPolicies = () => {
 
                   {!policies.length && (
                     <tr>
-                      <td colSpan={5} className="text-center py-6 text-gray-500">
+                      <td
+                        colSpan={5}
+                        className="text-center py-6 text-gray-500"
+                      >
                         No policies found
                       </td>
                     </tr>

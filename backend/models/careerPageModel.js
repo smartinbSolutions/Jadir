@@ -21,4 +21,18 @@ const careerSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+careerSchema.virtual("imageUrl").get(function () {
+  if (!this.image) return "";
+
+  return `/uploads/careers/${this.image}`;
+});
+
+careerSchema.set("toJSON", {
+  virtuals: true,
+});
+
+careerSchema.set("toObject", {
+  virtuals: true,
+});
+
 module.exports = mongoose.model("career", careerSchema);

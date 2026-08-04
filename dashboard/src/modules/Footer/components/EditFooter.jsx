@@ -7,6 +7,8 @@ import LoadingCard from "../../../components/Global/LoadingCard";
 import ErrorMessageCard from "../../../components/Global/ErrorMessageCard";
 import Tabs from "../../../components/Global/Tabs";
 
+const FOOTER_LANGUAGES = ["en", "ar", "tr"];
+
 const EditFooter = () => {
   const {
     isLoading,
@@ -15,6 +17,7 @@ const EditFooter = () => {
 
     description,
     handleDescriptionChange,
+
     address,
     handleAddressChange,
 
@@ -26,14 +29,18 @@ const EditFooter = () => {
     setXTwitter,
     linkedin,
     setLinkedin,
+
     phone,
     setPhone,
     email,
     setEmail,
-    workDays,
-    setWorkDays,
-    workingHours,
-    setWorkingHours,
+
+    workingStartTime,
+    setWorkingStartTime,
+
+    workingEndTime,
+    setWorkingEndTime,
+
     workingSchedule,
     setWorkingSchedule,
 
@@ -45,8 +52,13 @@ const EditFooter = () => {
     handleSave,
   } = useFooterForm();
 
-  if (isLoading) return <LoadingCard />;
-  if (error) return <ErrorMessageCard />;
+  if (isLoading) {
+    return <LoadingCard />;
+  }
+
+  if (error) {
+    return <ErrorMessageCard />;
+  }
 
   const tabConfig = [
     {
@@ -67,10 +79,10 @@ const EditFooter = () => {
           setPhone={setPhone}
           email={email}
           setEmail={setEmail}
-          workDays={workDays}
-          setWorkDays={setWorkDays}
-          workingHours={workingHours}
-          setWorkingHours={setWorkingHours}
+          workingStartTime={workingStartTime}
+          setWorkingStartTime={setWorkingStartTime}
+          workingEndTime={workingEndTime}
+          setWorkingEndTime={setWorkingEndTime}
           workingSchedule={workingSchedule}
           setWorkingSchedule={setWorkingSchedule}
           links={links}
@@ -80,15 +92,17 @@ const EditFooter = () => {
         />
       ),
     },
-    ...["en", "ar"].map((lang) => ({
-      key: `footer_${lang}`,
-      label: `Footer ${lang.toUpperCase()}`,
+
+    ...FOOTER_LANGUAGES.map((language) => ({
+      key: `footer_${language}`,
+      label: `Footer ${language.toUpperCase()}`,
       icon: "ki-outline ki-clipboard",
       content: (
         <FooterLangForm
-          language={lang}
-          descriptionValue={description[lang]}
+          language={language}
+          descriptionValue={description?.[language] || ""}
           onDescriptionChange={handleDescriptionChange}
+          address={address?.[language] || ""}
           onAddressChange={handleAddressChange}
         />
       ),
@@ -102,6 +116,7 @@ const EditFooter = () => {
       <div className="sticky bottom-4 z-20 mt-6 flex justify-end">
         <div className="rounded-2xl border border-gray-200 bg-white/95 p-3 shadow-lg backdrop-blur">
           <button
+            type="button"
             className="btn btn-primary"
             onClick={handleSave}
             disabled={isUpdating}

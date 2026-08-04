@@ -4,7 +4,7 @@ const FooterLangForm = ({
   language,
   descriptionValue = "",
   onDescriptionChange,
-  address,
+  address = "",
   onAddressChange,
 }) => {
   const [localValue, setLocalValue] = useState(descriptionValue || "");
@@ -19,10 +19,11 @@ const FooterLangForm = ({
   }, [address]);
 
   const handleChange = (field, value) => {
-    if (field === "desc") {
+    if (field === "description") {
       setLocalValue(value);
       onDescriptionChange?.(language, value);
     }
+
     if (field === "address") {
       setLocalAddress(value);
       onAddressChange?.(language, value);
@@ -36,6 +37,7 @@ const FooterLangForm = ({
           <h3 className="text-lg font-semibold text-gray-900">
             Footer Description ({language.toUpperCase()})
           </h3>
+
           <p className="mt-1 text-sm text-gray-500">
             Write the short footer introduction for this language.
           </p>
@@ -43,9 +45,10 @@ const FooterLangForm = ({
 
         <textarea
           value={localValue}
-          onChange={(e) => handleChange("desc", e.target.value)}
+          onChange={(e) => handleChange("description", e.target.value)}
           placeholder={`Enter description in ${language.toUpperCase()}`}
           className="input min-h-[220px] w-full tracking-[1px] leading-[20px]"
+          dir={language === "ar" ? "rtl" : "ltr"}
         />
       </div>
 
@@ -54,16 +57,18 @@ const FooterLangForm = ({
           <h3 className="text-lg font-semibold text-gray-900">
             Footer Address ({language.toUpperCase()})
           </h3>
+
           <p className="mt-1 text-sm text-gray-500">
             Write the address to show in footer for this language.
           </p>
         </div>
 
         <textarea
-          value={address}
+          value={localAddress}
           onChange={(e) => handleChange("address", e.target.value)}
           placeholder={`Enter address in ${language.toUpperCase()}`}
           className="input min-h-[220px] w-full tracking-[1px] leading-[20px]"
+          dir={language === "ar" ? "rtl" : "ltr"}
         />
       </div>
     </div>

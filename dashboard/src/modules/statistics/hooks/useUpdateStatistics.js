@@ -6,6 +6,7 @@ import { useOneStatistic, useStatistics } from "../../hooks/useStatistics";
 const emptyLangState = {
   en: "",
   ar: "",
+  tr: "",
 };
 
 const useUpdateStatistic = () => {
@@ -27,16 +28,19 @@ const useUpdateStatistic = () => {
     setTitle({
       en: statistic?.title?.en || "",
       ar: statistic?.title?.ar || "",
+      tr: statistic?.title?.tr || "",
     });
 
     setSuffix({
       en: statistic?.suffix?.en || "",
       ar: statistic?.suffix?.ar || "",
+      tr: statistic?.suffix?.tr || "",
     });
 
     setDescription({
       en: statistic?.description?.en || "",
-      ar: statistic?.description?.ar || "",
+      ar: statistic?.description?.ar || "", 
+      tr: statistic?.description?.tr || ""
     });
 
     setValue(statistic?.value || "");

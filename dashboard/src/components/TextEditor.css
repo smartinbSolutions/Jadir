@@ -1,0 +1,187 @@
+.text-editor {
+  width: 100%;
+  overflow: visible;
+}
+
+.text-editor .ql-toolbar.ql-snow {
+  position: relative;
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  border-color: #e5e7eb;
+  border-radius: 12px 12px 0 0;
+  background: #ffffff;
+  padding: 10px;
+}
+
+.text-editor .ql-container.ql-snow {
+  border-color: #e5e7eb;
+  border-radius: 0 0 12px 12px;
+  background: #ffffff;
+  font-family: inherit;
+  font-size: 16px;
+}
+
+.text-editor .ql-editor {
+  min-height: 260px;
+  padding: 18px 20px;
+  color: #111827;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.text-editor .ql-editor.ql-blank::before {
+  right: 20px;
+  left: 20px;
+  color: #9ca3af;
+  font-style: normal;
+}
+
+/* Font-size picker width */
+.text-editor .ql-snow .ql-picker.ql-size {
+  width: 80px;
+}
+
+/* Show the actual px value inside the picker */
+.text-editor .ql-snow .ql-picker.ql-size .ql-picker-label[data-value]::before,
+.text-editor .ql-snow .ql-picker.ql-size .ql-picker-item[data-value]::before {
+  content: attr(data-value);
+}
+
+/* Label shown when no custom size is selected */
+.text-editor
+  .ql-snow
+  .ql-picker.ql-size
+  .ql-picker-label:not([data-value])::before,
+.text-editor
+  .ql-snow
+  .ql-picker.ql-size
+  .ql-picker-item:not([data-value])::before {
+  content: "Size";
+}
+
+.text-editor .ql-picker-options {
+  z-index: 100;
+  max-height: 280px;
+  overflow-y: auto;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 10px 25px rgb(15 23 42 / 12%);
+}
+
+.text-editor .ql-toolbar button,
+.text-editor .ql-toolbar .ql-picker-label {
+  border-radius: 6px;
+}
+
+.text-editor .ql-toolbar button:hover,
+.text-editor .ql-toolbar button.ql-active,
+.text-editor .ql-toolbar .ql-picker-label:hover,
+.text-editor .ql-toolbar .ql-picker-label.ql-active {
+  background: #f3f4f6;
+}
+
+/* Keep the toolbar LTR so dropdown arrows stay correctly positioned */
+.text-editor-wrapper,
+.text-editor .ql-toolbar,
+.text-editor .ql-toolbar .ql-formats,
+.text-editor .ql-picker,
+.text-editor .ql-picker-label,
+.text-editor .ql-picker-options {
+  direction: ltr;
+  text-align: left;
+}
+
+/* Correct heading and font-size dropdown layout */
+.text-editor .ql-picker.ql-header,
+.text-editor .ql-picker.ql-size {
+  direction: ltr;
+}
+
+.text-editor .ql-picker-label {
+  padding-right: 18px;
+  padding-left: 8px;
+}
+
+.text-editor .ql-picker-label svg {
+  right: 2px;
+  left: auto;
+}
+
+/* Arabic applies only to the editable content */
+.text-editor.rtl-editor .ql-editor {
+  direction: rtl;
+  text-align: right;
+}
+
+.text-editor.rtl-editor .ql-editor.ql-blank::before {
+  right: 20px;
+  left: auto;
+  direction: rtl;
+  text-align: right;
+}
+
+/* Lists need explicit RTL positioning */
+.text-editor.rtl-editor .ql-editor ol,
+.text-editor.rtl-editor .ql-editor ul {
+  padding-right: 1.5em;
+  padding-left: 0;
+}
+
+/* Arabic blockquote */
+.text-editor.rtl-editor .ql-editor blockquote {
+  border-right: 4px solid #d1d5db;
+  border-left: 0;
+  padding-right: 16px;
+  padding-left: 0;
+}
+/* RTL support */
+.rtl-editor .ql-editor {
+  direction: rtl;
+  text-align: right;
+}
+
+.rtl-editor .ql-editor.ql-blank::before {
+  right: 20px;
+  left: auto;
+  text-align: right;
+}
+
+.rtl-editor .ql-editor blockquote {
+  border-right: 4px solid #d1d5db;
+  border-left: 0;
+  padding-right: 16px;
+  padding-left: 0;
+}
+
+/* Editor content styling */
+.text-editor .ql-editor h1 {
+  margin: 0.7em 0;
+  font-size: 2em;
+  font-weight: 700;
+}
+
+.text-editor .ql-editor h2 {
+  margin: 0.7em 0;
+  font-size: 1.5em;
+  font-weight: 700;
+}
+
+.text-editor .ql-editor h3 {
+  margin: 0.7em 0;
+  font-size: 1.25em;
+  font-weight: 600;
+}
+
+.text-editor .ql-editor h4 {
+  margin: 0.7em 0;
+  font-size: 1.1em;
+  font-weight: 600;
+}
+
+.text-editor .ql-editor a {
+  color: #2563eb;
+  text-decoration: underline;
+}

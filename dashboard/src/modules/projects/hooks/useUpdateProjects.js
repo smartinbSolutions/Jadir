@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { useNavigate, useParams } from "react-router-dom";
 import { useOneProject, useProjects } from "../../hooks/useProjects";
-import { imageURL } from "../../../Api/GlobalData";
+import getImageUrl from "../../../utils/getImageUrl";
 
 const emptyLangState = {
   en: "",
@@ -14,22 +14,43 @@ const useUpdateProject = () => {
   const navigate = useNavigate();
   const { id } = useParams();
 
+  const previewUrlRef = useRef(null);
+
   const { project, isLoading, error } = useOneProject(id);
   const { updateProject, isUpdating } = useProjects();
 
   const [title, setTitle] = useState({ ...emptyLangState });
   const [brief, setBrief] = useState({ ...emptyLangState });
-  const [challenge, setChallenge] = useState({ ...emptyLangState });
-  const [solution, setSolution] = useState({ ...emptyLangState });
+  const [challenge, setChallenge] = useState({
+    ...emptyLangState,
+  });
+  const [solution, setSolution] = useState({
+    ...emptyLangState,
+  });
   const [result, setResult] = useState({ ...emptyLangState });
+
   const [projectLink, setProjectLink] = useState("");
   const [order, setOrder] = useState(0);
 
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
 
+  const [removeImage, setRemoveImage] = useState(false);
+
+  const revokeTemporaryPreview = () => {
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
+    }
+  };
+
   useEffect(() => {
     if (!project) return;
+
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
+    }
 
     setTitle({
       en: project?.title?.en || "",
@@ -62,44 +83,78 @@ const useUpdateProject = () => {
     });
 
     setProjectLink(project?.projectLink || "");
-    setOrder(project?.order || 0);
+    setOrder(project?.order ?? 0);
 
-    setImagePreview(`${imageURL}/projects/${project?.image}` || null);
+    setImagePreview(project?.imageUrl ? getImageUrl(project.imageUrl) : null);
+
     setImageFile(null);
+    setRemoveImage(false);
   }, [project]);
 
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current);
+        previewUrlRef.current = null;
+      }
+    };
+  }, []);
+
   const handleTitleChange = (lang, value) => {
-    setTitle((prev) => ({ ...prev, [lang]: value }));
+    setTitle((prev) => ({
+      ...prev,
+      [lang]: value,
+    }));
   };
 
   const handleBriefChange = (lang, value) => {
-    setBrief((prev) => ({ ...prev, [lang]: value }));
+    setBrief((prev) => ({
+      ...prev,
+      [lang]: value,
+    }));
   };
 
   const handleChallengeChange = (lang, value) => {
-    setChallenge((prev) => ({ ...prev, [lang]: value }));
+    setChallenge((prev) => ({
+      ...prev,
+      [lang]: value,
+    }));
   };
 
   const handleSolutionChange = (lang, value) => {
-    setSolution((prev) => ({ ...prev, [lang]: value }));
+    setSolution((prev) => ({
+      ...prev,
+      [lang]: value,
+    }));
   };
 
   const handleResultChange = (lang, value) => {
-    setResult((prev) => ({ ...prev, [lang]: value }));
+    setResult((prev) => ({
+      ...prev,
+      [lang]: value,
+    }));
   };
-
   const onImageChange = (selectedAvatar) => {
     const file = selectedAvatar?.[0]?.file;
 
+    revokeTemporaryPreview();
+
     if (file) {
+      const temporaryUrl = URL.createObjectURL(file);
+
+      previewUrlRef.current = temporaryUrl;
+
       setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
-    } else {
-      setImageFile(null);
-      setImagePreview(
-        project?.image ? `${imageURL}/projects/${project.image}` : null,
-      );
+      setImagePreview(temporaryUrl);
+      setRemoveImage(false);
+
+      return;
     }
+
+    // المستخدم ضغط زر حذف الصورة
+    setImageFile(null);
+    setImagePreview(null);
+    setRemoveImage(true);
   };
 
   const handleSave = async () => {
@@ -112,10 +167,12 @@ const useUpdateProject = () => {
       formData.append("solution", JSON.stringify(solution));
       formData.append("result", JSON.stringify(result));
       formData.append("projectLink", projectLink || "");
-      formData.append("order", String(order || 0));
+      formData.append("order", String(order ?? 0));
 
-      if (imageFile) {
+      if (imageFile instanceof File) {
         formData.append("image", imageFile);
+      } else if (removeImage) {
+        formData.append("removeImage", "true");
       }
 
       await updateProject({
@@ -130,6 +187,7 @@ const useUpdateProject = () => {
       }, 1200);
     } catch (err) {
       console.error(err);
+
       toast.error(err?.data?.message || "Failed to update project");
     }
   };
@@ -138,22 +196,29 @@ const useUpdateProject = () => {
     error,
     isPageLoading: isLoading,
     isUpdating,
+
     title,
     brief,
     challenge,
     solution,
     result,
+
     projectLink,
     setProjectLink,
+
     order,
     setOrder,
+
+    imageFile,
     imagePreview,
     onImageChange,
+
     handleTitleChange,
     handleBriefChange,
     handleChallengeChange,
     handleSolutionChange,
     handleResultChange,
+
     handleSave,
   };
 };

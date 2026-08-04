@@ -24,6 +24,7 @@ exports.getPolicies = asyncHandler(async (req, res) => {
     query.$or = [
       { "title.ar": { $regex: safeKeyword, $options: "i" } },
       { "title.en": { $regex: safeKeyword, $options: "i" } },
+      { "title.tr": { $regex: safeKeyword, $options: "i" } },
       { slug: { $regex: safeKeyword, $options: "i" } },
     ];
   }

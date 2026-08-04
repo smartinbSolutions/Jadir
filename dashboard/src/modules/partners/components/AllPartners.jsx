@@ -5,7 +5,7 @@ import AddButton from "@/components/Global/AddButton";
 import { usePartners } from "../../hooks/usePartners";
 import LoadingCard from "../../../components/Global/LoadingCard";
 import ErrorMessageCard from "../../../components/Global/ErrorMessageCard";
-import { imageURL } from "../../../Api/GlobalData";
+import getImageUrl from "../../../utils/getImageUrl";
 
 const AllPartners = () => {
   const navigate = useNavigate();
@@ -36,9 +36,11 @@ const AllPartners = () => {
               <span className="inline-flex rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-200">
                 Partners Management
               </span>
+
               <h2 className="mt-4 text-2xl font-semibold">
                 Keep partner and client logos organized and presentation-ready
               </h2>
+
               <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-200">
                 Maintain partner entries, control display order, and keep
                 supporting brief text consistent.
@@ -51,6 +53,7 @@ const AllPartners = () => {
           <div className="card-header py-5 flex-wrap">
             <div>
               <h3 className="card-title">Partners List</h3>
+
               <p className="mt-1 text-sm text-gray-500">
                 Showing {partners.length} partner records
               </p>
@@ -80,8 +83,13 @@ const AllPartners = () => {
                       <td>
                         {partner?.img ? (
                           <img
-                            src={`${imageURL}/partners/${partner.img}`}
-                            alt={partner?.title?.en || partner?.title?.ar || "partner"}
+                            src={getImageUrl(partner.imageUrl)}
+                            alt={
+                              partner?.title?.en ||
+                              partner?.title?.ar ||
+                              partner?.title?.tr ||
+                              "partner"
+                            }
                             className="w-[70px] h-[70px] rounded-xl object-contain border"
                           />
                         ) : (
@@ -93,7 +101,10 @@ const AllPartners = () => {
 
                       <td>
                         <span className="text-sm font-medium text-gray-800">
-                          {partner?.title?.en || partner?.title?.ar || "-"}
+                          {partner?.title?.en ||
+                            partner?.title?.ar ||
+                            partner?.title?.tr ||
+                            "-"}
                         </span>
                       </td>
 
@@ -129,7 +140,7 @@ const AllPartners = () => {
                   {!partners?.length && (
                     <tr>
                       <td
-                        colSpan={6}
+                        colSpan={4}
                         className="text-center py-6 text-gray-500"
                       >
                         No partners found

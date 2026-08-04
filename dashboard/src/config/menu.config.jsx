@@ -17,7 +17,7 @@ export const SECONDARY_MENU_SIDEBAR = [
     icon: "home",
     children: [
       {
-        title: "Hero Sliders",
+        title: "Home Sliders",
         path: "/all-home-sliders",
         icon: "picture",
       },

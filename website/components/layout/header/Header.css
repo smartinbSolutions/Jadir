@@ -322,10 +322,10 @@ html[dir="rtl"] .jadwa-header-tagline {
    DESKTOP MAIN ROW
 ========================================= */
 .jadwa-header-main-row {
+  position: relative;
   min-width: 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
 }
 
@@ -541,7 +541,39 @@ html[dir="rtl"] .jadwa-invest-btn:hover::after {
 }
 
 .jadwa-global-search-desktop {
-  flex: 0 1 300px;
+  min-width: 0;
+}
+
+.jadwa-header-search {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  animation: jadwaSearchOpen 0.22s ease;
+}
+
+.jadwa-header-search .jadwa-global-search-form {
+  width: 100%;
+  min-width: 0;
+}
+
+.jadwa-header-search .jadwa-global-search-form input {
+  width: 0;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  font-size: 13px;
+}
+
+@keyframes jadwaSearchOpen {
+  from {
+    opacity: 0;
+    transform: scaleX(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: scaleX(1);
+  }
 }
 
 .jadwa-global-search-form {
@@ -793,7 +825,14 @@ html[dir="rtl"] .jadwa-search-results-popover {
   box-shadow:
     0 28px 90px rgba(0, 2, 79, 0.28),
     inset 0 1px 0 rgba(255, 255, 255, 0.88);
-  transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+  opacity: 0;
+  visibility: hidden;
+  will-change: transform, opacity;
+
+  transition:
+    transform 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.2s ease,
+    visibility 0s linear 0.38s;
 }
 
 .jadwa-mobile-panel.ltr {
@@ -808,6 +847,13 @@ html[dir="rtl"] .jadwa-search-results-popover {
 
 .jadwa-mobile-menu.is-open .jadwa-mobile-panel {
   transform: translateX(0);
+  opacity: 1;
+  visibility: visible;
+
+  transition:
+    transform 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.2s ease,
+    visibility 0s linear 0s;
 }
 
 .jadwa-mobile-panel-inner {

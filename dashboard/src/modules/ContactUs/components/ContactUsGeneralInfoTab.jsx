@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
-const LANGS = ["en", "ar"];
+const LANGS = ["en", "ar" , "tr"];
 
 const createBranch = () => ({
   name: { en: "", ar: "", tr: "" },

@@ -1,59 +1,138 @@
 "use client";
 
 import Link from "next/link";
-import { imageURL } from "@/api/GlobalData";
-import { truncateText } from "@/GlobalHooks/GlobalHooks";
-import { getCountryNameByCode } from "@/lib/helpers";
+import parse from "html-react-parser";
 import { useTranslation } from "react-i18next";
+import { getCountryNameByCode } from "@/lib/helpers";
 
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Pagination } from "swiper/modules";
 
 import "swiper/css";
 import "swiper/css/pagination";
+import getImageUrl from "@/components/utils/getImageUrl";
+
+const getLocalizedText = (value, lang = "en", fallback = "") => {
+  if (typeof value === "string" || typeof value === "number") {
+    return String(value);
+  }
+
+  if (!value || typeof value !== "object") {
+    return fallback;
+  }
+
+  const localizedValue = value[lang] ?? value.en ?? value.ar ?? value.tr;
+
+  if (
+    typeof localizedValue === "string" ||
+    typeof localizedValue === "number"
+  ) {
+    return String(localizedValue);
+  }
+
+  return fallback;
+};
+
+const getCompanyLogo = (company) => {
+  if (company?.imageUrl) {
+    return getImageUrl(company.imageUrl);
+  }
+
+  // دعم البيانات القديمة مؤقتًا
+  if (company?.logo) {
+    return getImageUrl(`/uploads/companies/${company.logo}`);
+  }
+
+  return "";
+};
+
+const getCompanyBackground = (company) => {
+  if (company?.backgroundImageUrl) {
+    return getImageUrl(company.backgroundImageUrl);
+  }
+
+  // دعم البيانات القديمة مؤقتًا
+  if (company?.background) {
+    return getImageUrl(`/uploads/companies/${company.background}`);
+  }
+
+  return "";
+};
 
 export default function CompaniesBrief({ companies = [] }) {
   const { i18n, t } = useTranslation();
-  const lang = i18n.language || "en";
+
+  const lang = (i18n.resolvedLanguage || i18n.language || "en").split("-")[0];
+
   const isRtl = lang === "ar";
 
-  const visibleCompanies = [...companies]
-    .filter(
-      (company) => company?.companyName?.en || company?.companyName?.[lang],
-    )
-    .sort((a, b) => (a?.order || 0) - (b?.order || 0))
+  const safeCompanies = Array.isArray(companies) ? companies : [];
+
+  const visibleCompanies = [...safeCompanies]
+    .filter((company) => {
+      const companyName = getLocalizedText(
+        company?.companyName ?? company?.name,
+        lang,
+        "",
+      );
+
+      return Boolean(companyName);
+    })
+    .sort((a, b) => Number(a?.order || 0) - Number(b?.order || 0))
     .slice(0, 3);
 
-  if (!visibleCompanies.length) return null;
+  if (!visibleCompanies.length) {
+    return null;
+  }
 
   const fallbackLabel = (key, defaultValue) => {
     const value = t(key);
-    return value === key ? defaultValue : value;
+
+    if (typeof value !== "string" || value === key) {
+      return defaultValue;
+    }
+
+    return value;
   };
 
   const getSafeWebsite = (website) => {
-    if (!website) return null;
+    if (!website || typeof website !== "string") {
+      return null;
+    }
+
     return /^https?:\/\//i.test(website) ? website : `https://${website}`;
   };
 
-  const renderCompanyCard = (company, index, mobile = false) => {
-    const companyName =
-      company?.companyName?.[lang] ||
-      company?.companyName?.en ||
-      company?.aboutus?.[lang] ||
-      company?.aboutus?.en ||
-      "";
+  const renderCompanyCard = (company, mobile = false) => {
+    const companyName = getLocalizedText(
+      company?.companyName ?? company?.name ?? company?.aboutus,
+      lang,
+      "",
+    );
 
-    const companyAbout = company?.about?.[lang] || company?.about?.en || "";
+    const companyAbout = getLocalizedText(
+      company?.brief ?? company?.about,
+      lang,
+      "",
+    );
 
-    const experienceField =
-      company?.ExperienceField?.[lang] || company?.ExperienceField?.en || "";
+    const experienceField = getLocalizedText(
+      company?.ExperienceField ?? company?.experienceField,
+      lang,
+      "",
+    );
 
     const companyCountry = company?.country
       ? getCountryNameByCode(company.country, lang)
       : "";
 
-    const companyHref = `/company-details/${company?.slug}`;
+    const companyLogo = getCompanyLogo(company);
+    const companyBackground = getCompanyBackground(company);
+
+    const companyHref = company?.slug
+      ? `/company-details/${company.slug}`
+      : "/companies";
+
     const websiteHref = getSafeWebsite(company?.website);
 
     return (
@@ -67,11 +146,12 @@ export default function CompaniesBrief({ companies = [] }) {
         <div className="companies-brief-media">
           <div className="companies-brief-media-overlay" />
 
-          {company?.background ? (
+          {companyBackground ? (
             <img
-              src={`${imageURL}companies/${company.background}`}
+              src={companyBackground}
               alt={companyName}
               className="companies-brief-background-image"
+              loading="lazy"
             />
           ) : (
             <div className="companies-brief-media-pattern" />
@@ -79,21 +159,22 @@ export default function CompaniesBrief({ companies = [] }) {
         </div>
 
         <div className="companies-brief-logo-wrap">
-          {company?.logo ? (
+          {companyLogo ? (
             <img
-              src={`${imageURL}companies/${company.logo}`}
+              src={companyLogo}
               alt={companyName}
               className="companies-brief-logo"
+              loading="lazy"
             />
           ) : (
             <div className="companies-brief-fallback-icon">
-              {companyName?.charAt(0)}
+              {companyName.charAt(0).toUpperCase()}
             </div>
           )}
         </div>
 
         <div className="companies-brief-content">
-          {(experienceField || companyCountry) && (
+          {experienceField || companyCountry ? (
             <div
               className={`companies-brief-tags ${
                 isRtl ? "companies-brief-tags-rtl" : ""
@@ -111,18 +192,21 @@ export default function CompaniesBrief({ companies = [] }) {
                 </span>
               ) : null}
             </div>
-          )}
+          ) : null}
 
           <h3 className="companies-brief-company-title">
             <Link href={companyHref}>{companyName}</Link>
           </h3>
 
-          <div
-            className="companies-brief-company-text"
-            dangerouslySetInnerHTML={{
-              __html: truncateText(companyAbout, mobile ? 85 : 110),
-            }}
-          />
+          {companyAbout ? (
+            <div
+              className={`companies-brief-company-text ${
+                mobile ? "companies-brief-company-text-mobile" : ""
+              }`}
+            >
+              {parse(companyAbout)}
+            </div>
+          ) : null}
 
           <div className="companies-brief-footer">
             <Link href={companyHref} className="companies-brief-read-more">
@@ -135,6 +219,7 @@ export default function CompaniesBrief({ companies = [] }) {
                   className={`fas ${
                     isRtl ? "fa-arrow-left" : "fa-arrow-right"
                   }`}
+                  aria-hidden="true"
                 />
               </span>
             </Link>
@@ -148,8 +233,9 @@ export default function CompaniesBrief({ companies = [] }) {
                 aria-label={`${companyName} website`}
               >
                 <span className="companies-brief-website-icon">
-                  <i className="fas fa-globe-americas" />
+                  <i className="fas fa-globe-americas" aria-hidden="true" />
                 </span>
+
                 <span>{fallbackLabel("website", "Website")}</span>
               </a>
             ) : (
@@ -170,6 +256,7 @@ export default function CompaniesBrief({ companies = [] }) {
         <div className="jadwa-testimonials-head companies-brief-head">
           <div className="jadwa-pill">
             <span className="jadwa-pill-dot" />
+
             <span>{fallbackLabel("companies.title", "Companies")}</span>
           </div>
 
@@ -188,19 +275,17 @@ export default function CompaniesBrief({ companies = [] }) {
           </p>
         </div>
 
-        {/* Desktop / Tablet Grid */}
         <div className="row clearfix companies-brief-grid">
           {visibleCompanies.map((company, index) => (
             <div
               key={company?._id || company?.slug || index}
               className="col-lg-4 col-md-6 col-sm-12 mb-4"
             >
-              {renderCompanyCard(company, index, false)}
+              {renderCompanyCard(company, false)}
             </div>
           ))}
         </div>
 
-        {/* Mobile Swiper */}
         <div
           key={`companies-mobile-slider-${lang}`}
           className="companies-brief-mobile-slider"
@@ -210,7 +295,9 @@ export default function CompaniesBrief({ companies = [] }) {
             modules={[Pagination]}
             spaceBetween={14}
             slidesPerView={1.08}
-            pagination={{ clickable: true }}
+            pagination={{
+              clickable: true,
+            }}
             dir={isRtl ? "rtl" : "ltr"}
             className="companies-brief-swiper"
           >
@@ -218,7 +305,7 @@ export default function CompaniesBrief({ companies = [] }) {
               <SwiperSlide
                 key={`${lang}-${company?._id || company?.slug || index}`}
               >
-                {renderCompanyCard(company, index, true)}
+                {renderCompanyCard(company, true)}
               </SwiperSlide>
             ))}
           </Swiper>

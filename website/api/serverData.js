@@ -26,33 +26,66 @@ function normalizeSocialLinks(socialLinks = {}) {
 }
 
 export function normalizeCompany(company = {}) {
+  const companyName = company.companyName ?? company.name ?? {};
+
+  const brief =
+    company.brief ?? company.about ?? company.content ?? company.aboutus ?? {};
+
+  const testimonial = company.testimonial ?? {};
+
+  const imageUrl = company.imageUrl ?? company.logoUrl ?? "";
+
   const introductionItems = Array.isArray(company.services)
     ? company.services
     : [];
+
   const goals = Array.isArray(company.values) ? company.values : [];
+
   const normalizedGoals = normalizeLocalizedArray(company.goals);
+
   const normalizedAddresses = normalizeLocalizedArray(company.addresses);
+
   const normalizedServices = normalizeLocalizedArray(company.services);
+
   const normalizedValues = normalizeLocalizedArray(company.values);
+
   const normalizedStatistics = Array.isArray(company.statistics)
     ? company.statistics.filter(Boolean)
     : [];
+
   const normalizedFundsAssociated = Array.isArray(company.fundsAssociated)
     ? company.fundsAssociated.filter(Boolean)
     : [];
 
   return {
     ...company,
-    logo: company.logo,
-    background: company.background,
-    companyName: company.companyName ?? company.name ?? {},
+
+    // Current company schema
+    name: company.name ?? companyName,
+    brief,
+    testimonial,
+    logo: company.logo ?? "",
+    imageUrl,
+    slug: company.slug ?? "",
+    order: Number(company.order) || 0,
+
+    // Compatibility with older website components
+    companyName,
+    logoUrl: company.logoUrl ?? imageUrl,
+    aboutus: company.aboutus ?? brief,
+    about: company.about ?? brief,
+    content: company.content ?? brief,
+
+    // Legacy company fields
+    background: company.background ?? "",
     Experience: company.Experience ?? company.experienceYears ?? "",
+
     ExperienceField: company.ExperienceField ?? company.experienceField ?? {},
-    aboutus: company.aboutus ?? company.name ?? {},
-    about: company.about ?? {},
-    content: company.content ?? {},
+
     country: company.country ?? "",
+
     social_links: normalizeSocialLinks(company.social_links),
+
     addresses: normalizedAddresses,
     phone: company.phone ?? "",
     email: company.email ?? "",
@@ -61,18 +94,21 @@ export function normalizeCompany(company = {}) {
     values: normalizedValues,
     statistics: normalizedStatistics,
     fundsAssociated: normalizedFundsAssociated,
+
     introduction: company.introduction ?? {
-      title: company.content ?? company.about ?? {},
+      title: brief,
       array: introductionItems,
     },
+
     mission: company.mission ?? {},
     vision: company.vision ?? {},
+
     goals:
       normalizedGoals.length > 0
         ? normalizedGoals
-        : goals.map(
-            (value) => value?.description || value?.content || value?.name,
-          ),
+        : goals
+            .map((value) => value?.description || value?.content || value?.name)
+            .filter(Boolean),
   };
 }
 
@@ -132,14 +168,54 @@ export function normalizeStatistic(statistic = {}) {
   };
 }
 
+function normalizeImageValue(value) {
+  if (Array.isArray(value)) {
+    return value.find((item) => typeof item === "string" && item.trim()) || "";
+  }
+
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function buildBlogImagePath(value) {
+  if (!value) return "";
+
+  if (value.startsWith("http") || value.startsWith("/")) {
+    return value;
+  }
+
+  if (value.startsWith("uploads/")) {
+    return `/${value}`;
+  }
+
+  return `/uploads/blogs/${value}`;
+}
+
 export function normalizeBlog(blog = {}) {
-  const image = blog.image ?? blog.thumbnailImage;
-  const thumbnailImage = blog.thumbnailImage ?? blog.photo ?? blog.image;
+  const rawImage =
+    normalizeImageValue(blog.image) || normalizeImageValue(blog.photo);
+
+  const rawThumbnail = normalizeImageValue(blog.thumbnailImage);
+
+  const image = rawImage || rawThumbnail;
+  const thumbnailImage = rawThumbnail || rawImage;
+
+  const imageUrl =
+    normalizeImageValue(blog.imageUrl) || buildBlogImagePath(image);
+
+  const thumbnailImageUrl =
+    normalizeImageValue(blog.thumbnailImageUrl) ||
+    buildBlogImagePath(thumbnailImage);
 
   return {
     ...blog,
-    photo: image,
+
     image,
-    thumbnailImage: thumbnailImage ? [thumbnailImage] : [],
+    imageUrl,
+
+    thumbnailImage,
+    thumbnailImageUrl,
+
+    // للتوافق مع المكونات القديمة
+    photo: image,
   };
 }

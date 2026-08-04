@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "next/router";
 import { getAllBlogs, getAllCategories } from "@/api/getOtherData";
-import { imageURL } from "@/api/GlobalData";
+import getImageUrl from "@/components/utils/getImageUrl";
 import { Swiper, SwiperSlide } from "swiper/react";
 import {
   Navigation,
@@ -23,6 +23,13 @@ import { useIsMobile } from "@/lib/helpers";
 
 const BLOGS_PER_PAGE = 9;
 
+const getLocalizedValue = (value, lang, fallback = "") => {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  return value?.[lang] || value?.en || value?.ar || value?.tr || fallback;
+};
 const getCategoryLabel = (category, lang) =>
   category?.name?.[lang] ||
   category?.name?.en ||
@@ -30,10 +37,15 @@ const getCategoryLabel = (category, lang) =>
   category?.title?.en ||
   "";
 
-const getBlogImage = (blog) =>
-  blog?.photo
-    ? `${imageURL}blogs/${blog.photo}`
-    : "/assets/images/news/news-5.jpg";
+const FALLBACK_BLOG_IMAGE = "/assets/images/news/news-5.jpg";
+
+const getBlogImage = (blog, useThumbnail = false) => {
+  const path = useThumbnail
+    ? blog?.thumbnailImageUrl || blog?.imageUrl
+    : blog?.imageUrl || blog?.thumbnailImageUrl;
+
+  return path ? getImageUrl(path) : FALLBACK_BLOG_IMAGE;
+};
 
 export default function BlogPage({
   initialBlogs,
@@ -149,6 +161,9 @@ export default function BlogPage({
   const totalItems = blogs?.pagination?.totalItems ?? blogs?.data?.length ?? 0;
   const blogItems = blogs?.data || [];
 
+  console.log("BLOG DATA:", blogItems[0]);
+  console.log("GENERATED IMAGE URL:", getBlogImage(blogItems[0], true));
+
   const featuredBlogs = blogItems.slice(0, 3);
 
   const gridBlogs = blogItems;
@@ -170,7 +185,7 @@ export default function BlogPage({
               <span className="jadwa-pill-dot" />
               <span>
                 {currentLang === "ar"
-                  ? "المدونة"
+                  ? "الاخبار"
                   : currentLang === "tr"
                     ? "Blog"
                     : "Blog"}
@@ -294,6 +309,7 @@ export default function BlogPage({
                   <SwiperSlide key={blog?._id || blog?.slug}>
                     <article className="jadwa-blog-hero-card">
                       <div className="jadwa-blog-hero-image-wrap">
+                        {/* Hero: main image */}
                         <img
                           src={getBlogImage(blog)}
                           alt={
@@ -340,7 +356,11 @@ export default function BlogPage({
                         <div className="big-blog-bottom-content">
                           <div className="jadwa-blog-hero-meta">
                             <span>
-                              {blog?.author?.name || "Jadir Investment"}
+                              {getLocalizedValue(
+                                blog?.author?.name,
+                                currentLang,
+                                "Jadir Investment",
+                              )}{" "}
                             </span>
                             <span className="jadwa-blog-meta-dot" />
                             <span>{formatDate(blog?.createdAt)}</span>
@@ -445,7 +465,11 @@ export default function BlogPage({
 
                         <div className="jadwa-blog-card-v2-footer">
                           <span className="jadwa-blog-card-v2-author">
-                            {blog?.author?.name || "Jadir Investment"}
+                            {getLocalizedValue(
+                              blog?.author?.name,
+                              currentLang,
+                              "Jadir Investment",
+                            )}{" "}
                           </span>
 
                           <Link

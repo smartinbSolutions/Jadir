@@ -1,20 +1,22 @@
 import { fetchJSON, pickArray, pickObject } from "../GlobalHooks/GlobalHooks";
+
 import baseURL, {
-  AboutServiceEndPoint,
   AboutHomeEndPoint,
-  BlogCategoriesEndPoint,
-  BlogEndPoint,
+  AboutServicesEndPoint,
+  BlogsEndPoint,
+  BoardMembersEndPoint,
+  CategoriesEndPoint,
   CompaniesPublicEndPoint,
   CustomPagesEndPoint,
-  FundsEndPoint,
-  MemberEndPoint,
+  InvestmentFundsEndPoint,
+  OurServicesEndPoint,
   PlansEndPoint,
   ProjectsEndPoint,
   ResearchEndPoint,
   StatisticsEndPoint,
-  OurServicesEndPoint,
-  testimonialsEndPoint,
+  TestimonialsEndPoint,
 } from "@/api/GlobalData";
+
 import {
   normalizeBlog,
   normalizeBoardMember,
@@ -22,6 +24,7 @@ import {
   normalizeFund,
   normalizeStatistic,
 } from "@/api/serverData";
+
 import { getPageBanners } from "@/lib/pageBanners";
 
 export async function getAllBlogs({
@@ -33,52 +36,78 @@ export async function getAllBlogs({
 } = {}) {
   const params = new URLSearchParams();
 
-  if (keyword) params.append("keyword", keyword);
+  if (keyword) {
+    params.append("keyword", keyword);
+  }
+
   params.append("page", page.toString());
   params.append("limit", limit.toString());
-  if (CategoryId) params.append("category", CategoryId.toString());
-  if (published) params.append("published", published.toString());
+
+  if (CategoryId) {
+    params.append("category", CategoryId.toString());
+  }
+
+  if (published) {
+    params.append("published", published.toString());
+  }
 
   try {
-    const res = await fetch(
-      `${baseURL}${BlogEndPoint}/public?${params.toString()}`,
+    const response = await fetch(
+      `${baseURL}${BlogsEndPoint}/public?${params.toString()}`,
     );
 
-    if (!res.ok) {
-      console.error("Failed to fetch blogs");
-      return { data: [], pagination: { totalPages: 0 } };
+    if (!response.ok) {
+      console.error(
+        `Failed to fetch blogs: ${response.status} ${response.statusText}`,
+      );
+
+      return {
+        data: [],
+        pagination: {
+          totalPages: 0,
+        },
+      };
     }
 
-    const payload = await res.json();
+    const payload = await response.json();
 
     return {
       ...payload,
       data: pickArray(payload).map(normalizeBlog),
     };
   } catch (error) {
-    console.error("Failed to fetch blogs", error);
-    return { data: [], pagination: { totalPages: 0 } };
+    console.error("Failed to fetch blogs:", error);
+
+    return {
+      data: [],
+      pagination: {
+        totalPages: 0,
+      },
+    };
   }
 }
 
 export async function getBlogBySlug(slug) {
-  if (!slug) return null;
+  if (!slug) {
+    return null;
+  }
 
   try {
-    const payload = await fetchJSON(`${baseURL}${BlogEndPoint}/public/slug/${slug}`);
+    const payload = await fetchJSON(
+      `${baseURL}${BlogsEndPoint}/public/slug/${encodeURIComponent(slug)}`,
+    );
+
     return normalizeBlog(payload?.data || {});
   } catch (error) {
-    console.error("Failed to fetch blog by slug", error);
+    console.error("Failed to fetch blog by slug:", error);
     return null;
   }
 }
 
-export async function getRelatedBlogs({
-  blog,
-  lang,
-  limit = 3,
-} = {}) {
-  if (!blog) return [];
+export async function getRelatedBlogs({ blog, lang = "en", limit = 3 } = {}) {
+  if (!blog) {
+    return [];
+  }
 
   const categoryId = blog?.category?._id || blog?.category;
   const excludeId = blog?._id;
@@ -88,7 +117,11 @@ export async function getRelatedBlogs({
 
     return items.filter((item) => {
       const id = item?._id || item?.slug;
-      if (!id || id === excludeId || seen.has(id)) return false;
+
+      if (!id || id === excludeId || seen.has(id)) {
+        return false;
+      }
+
       seen.add(id);
       return true;
     });
@@ -96,84 +129,144 @@ export async function getRelatedBlogs({
 
   const scoreRelated = (items = []) =>
     [...items].sort((a, b) => {
-      const aLang = Boolean(a?.content?.[lang] || a?.title?.[lang]);
-      const bLang = Boolean(b?.content?.[lang] || b?.title?.[lang]);
-      return Number(bLang) - Number(aLang);
+      const aHasLanguage = Boolean(a?.content?.[lang] || a?.title?.[lang]);
+
+      const bHasLanguage = Boolean(b?.content?.[lang] || b?.title?.[lang]);
+
+      return Number(bHasLanguage) - Number(aHasLanguage);
     });
 
   try {
     const categoryBlogs = categoryId
-      ? await getAllBlogs({ page: 1, limit: limit + 4, CategoryId: categoryId })
-      : { data: [] };
-    let related = scoreRelated(selectUnique(categoryBlogs?.data || []));
+      ? await getAllBlogs({
+          page: 1,
+          limit: limit + 4,
+          CategoryId: categoryId,
+        })
+      : {
+          data: [],
+        };
 
-    if (related.length < limit) {
-      const fallbackBlogs = await getAllBlogs({ page: 1, limit: limit + 6 });
+    let relatedBlogs = scoreRelated(selectUnique(categoryBlogs?.data || []));
+
+    if (relatedBlogs.length < limit) {
+      const fallbackBlogs = await getAllBlogs({
+        page: 1,
+        limit: limit + 6,
+      });
+
       const fallback = scoreRelated(selectUnique(fallbackBlogs?.data || []));
 
-      related = selectUnique([...related, ...fallback]);
+      relatedBlogs = selectUnique([...relatedBlogs, ...fallback]);
     }
 
-    return related.slice(0, limit);
+    return relatedBlogs.slice(0, limit);
   } catch (error) {
-    console.error("Failed to fetch related blogs", error);
+    console.error("Failed to fetch related blogs:", error);
     return [];
   }
 }
 
 export async function getAllCategories({ keyword = "" } = {}) {
+  const params = new URLSearchParams();
+
+  if (keyword) {
+    params.append("keyword", keyword);
+  }
+
   try {
-    const res = await fetch(
-      `${baseURL}${BlogCategoriesEndPoint}/public?keyword=${keyword}`,
+    const response = await fetch(
+      `${baseURL}${CategoriesEndPoint}/public?${params.toString()}`,
     );
-    if (!res.ok) {
-      console.error("Failed to fetch categories");
-      return { data: [] };
+
+    if (!response.ok) {
+      console.error(
+        `Failed to fetch categories: ${response.status} ${response.statusText}`,
+      );
+
+      return {
+        data: [],
+      };
     }
 
-    return res.json();
+    return response.json();
   } catch (error) {
-    console.error("Failed to fetch categories", error);
-    return { data: [] };
+    console.error("Failed to fetch categories:", error);
+
+    return {
+      data: [],
+    };
   }
 }
 
-export async function getOtherData() {
-  const urls = [
-    `${baseURL}${AboutHomeEndPoint}`,
-    `${baseURL}${AboutServiceEndPoint}`,
-    `${baseURL}${OurServicesEndPoint}/public`,
-    `${baseURL}${PlansEndPoint}/public`,
-    `${baseURL}${CompaniesPublicEndPoint}`,
-    `${baseURL}${FundsEndPoint}/public`,
-    `${baseURL}${MemberEndPoint}/public`,
-    `${baseURL}${StatisticsEndPoint}`,
-    `${baseURL}${ProjectsEndPoint}`,
-    `${baseURL}${ResearchEndPoint}`,
-    `${baseURL}${CustomPagesEndPoint}`,
-    `${baseURL}${testimonialsEndPoint}`,
-  ];
+export async function getOtherData({ includeCompanies = true } = {}) {
+  const requests = {
+    aboutUs: `${baseURL}${AboutHomeEndPoint}`,
+    aboutService: `${baseURL}${AboutServicesEndPoint}`,
+    servicesList: `${baseURL}${OurServicesEndPoint}/public`,
+    plans: `${baseURL}${PlansEndPoint}/public`,
+    funds: `${baseURL}${InvestmentFundsEndPoint}/public`,
+    members: `${baseURL}${BoardMembersEndPoint}/public`,
+    statistics: `${baseURL}${StatisticsEndPoint}`,
+    projects: `${baseURL}${ProjectsEndPoint}`,
+    research: `${baseURL}${ResearchEndPoint}`,
+    customPages: `${baseURL}${CustomPagesEndPoint}`,
+    testimonials: `${baseURL}${TestimonialsEndPoint}`,
+  };
+
+  if (includeCompanies) {
+    requests.companies = `${baseURL}${CompaniesPublicEndPoint}`;
+  }
+
+  const requestEntries = Object.entries(requests);
 
   const [results, pageBanners] = await Promise.all([
-    Promise.allSettled(urls.map((u) => fetchJSON(u))),
-    getPageBanners(),
+    Promise.allSettled(requestEntries.map(([, url]) => fetchJSON(url))),
+
+    getPageBanners().catch((error) => {
+      console.error("Failed to fetch page banners:", error);
+      return {};
+    }),
   ]);
-  const safe = (i, fb = []) =>
-    results[i].status === "fulfilled" ? results[i].value : fb;
+
+  const responseData = {};
+
+  results.forEach((result, index) => {
+    const [key, url] = requestEntries[index];
+
+    if (result.status === "fulfilled") {
+      responseData[key] = result.value;
+      return;
+    }
+
+    console.error(`Failed to fetch other data from: ${url}`, result.reason);
+  });
+
+  const safe = (key, fallback = []) =>
+    Object.prototype.hasOwnProperty.call(responseData, key)
+      ? responseData[key]
+      : fallback;
 
   return {
-    aboutUs: pickObject(safe(0, {})),
-    aboutService: pickObject(safe(1, {})),
-    servicesList: pickArray(safe(2, [])),
-    plans: pickArray(safe(3, [])),
-    companies: pickArray(safe(4, [])).map(normalizeCompany),
-    funds: pickArray(safe(5, [])).map(normalizeFund),
-    members: pickArray(safe(6, [])).map(normalizeBoardMember),
-    statistics: pickArray(safe(7, [])).map(normalizeStatistic),
-    projects: pickArray(safe(8, [])),
-    research: pickArray(safe(9, [])),
-    customPages: pickArray(safe(10, [])),
-    testimonials: pickArray(safe(11, [])),
+    aboutUs: pickObject(safe("aboutUs", {})),
+    aboutService: pickObject(safe("aboutService", {})),
+    servicesList: pickArray(safe("servicesList")),
+    plans: pickArray(safe("plans")),
+
+    companies: includeCompanies
+      ? pickArray(safe("companies")).map(normalizeCompany)
+      : [],
+
+    funds: pickArray(safe("funds")).map(normalizeFund),
+
+    members: pickArray(safe("members")).map(normalizeBoardMember),
+
+    statistics: pickArray(safe("statistics")).map(normalizeStatistic),
+
+    projects: pickArray(safe("projects")),
+    research: pickArray(safe("research")),
+    customPages: pickArray(safe("customPages")),
+    testimonials: pickArray(safe("testimonials")),
     pageBanners,
     investPortfolio: {},
   };

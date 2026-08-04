@@ -12,6 +12,8 @@ const TestimonialGeneralInfoTab = ({
   imagePreview,
   onImageChange,
 }) => {
+  console.log(imagePreview);
+  
   return (
     <div className="flex flex-col lg:flex-row gap-4">
       <div className="flex-1 card">

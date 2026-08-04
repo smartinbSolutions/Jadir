@@ -17,11 +17,12 @@ const TestimonialLangForm = ({
 
   useEffect(() => {
     setLocalState({
+      name: nameValue || "",
       role: roleValue || "",
       company: companyValue || "",
       content: contentValue || "",
     });
-  }, [roleValue, companyValue, contentValue]);
+  }, [nameValue, roleValue, companyValue, contentValue]);
 
   const handleChange = (key, value) => {
     setLocalState((prev) => ({ ...prev, [key]: value }));

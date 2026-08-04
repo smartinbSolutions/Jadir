@@ -54,7 +54,7 @@ const UpdatePolicy = () => {
         />
       ),
     },
-    ...["en", "ar"].map((lang) => ({
+    ...["en", "ar", "tr"].map((lang) => ({
       key: `policy_${lang}`,
       label: `Policy ${lang.toUpperCase()}`,
       icon: "ki-outline ki-clipboard",
@@ -74,7 +74,11 @@ const UpdatePolicy = () => {
     <Container>
       <Tabs tabs={tabConfig} />
       <div className="mt-6">
-        <button className="btn btn-primary" onClick={handleSave} disabled={isUpdating}>
+        <button
+          className="btn btn-primary"
+          onClick={handleSave}
+          disabled={isUpdating}
+        >
           {isUpdating ? "Updating..." : "Update Policy"}
         </button>
       </div>

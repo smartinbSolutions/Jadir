@@ -57,6 +57,7 @@ import AddCareer from "../modules/Careers/components/AddCareer";
 import UpdateCareer from "../modules/Careers/components/UpdateCareer";
 import CareerApplications from "../modules/Careers/components/CareerApplications";
 import EditPageBanners from "../modules/PageBanners/components/EditPageBanners";
+import ReplyMessage from "../modules/Messages/components/ReplyMessage";
 
 const AppRoutingSetup = () => {
   return (
@@ -99,6 +100,7 @@ const AppRoutingSetup = () => {
 
           {/* Messages */}
           <Route path="/all-messages" element={<AllMessages />} />
+          <Route path="/reply-message/:id" element={<ReplyMessage />} />
 
           {/* Contact Us */}
           <Route path="/edit-contact-us" element={<EditContactUs />} />

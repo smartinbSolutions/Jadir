@@ -11,11 +11,10 @@ import FounderSlides from "@/components/pages/AboutUs/FounderSlider";
 import CompaniesBrief from "@/components/pages/AboutUs/CompaniesBrief";
 import { getOtherData } from "@/api/getOtherData";
 import { getHomeData } from "@/api/getHomeData";
-import {
-  Testimonials,
-  TrustedLogos,
-} from "@/components/website/PublicSections";
+import { TrustedLogos } from "@/components/website/PublicSections";
+
 import { resolvePageBanner } from "@/lib/pageBanners";
+import TestimonialsShowcase from "@/components/slider/TestimonialSlider03";
 
 const PAGE_COPY = {
   en: {
@@ -328,14 +327,14 @@ export default function About({ data = {}, homeData = {} }) {
                 </div>
               )}
 
-              {!!companies?.length && <CompaniesBrief companies={companies} />}
+              {/* {!!companies?.length && <CompaniesBrief companies={companies} />} */}
             </div>
           )}
 
           {activeTab === "trusted" && (
             <div className="about-page-content">
               <TrustedLogos partners={partners} companies={companies} />
-              <Testimonials testimonials={testimonials} length={10} />
+              <TestimonialsShowcase testimonials={testimonials} />{" "}
             </div>
           )}
 

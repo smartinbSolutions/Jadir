@@ -1,9 +1,25 @@
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
-import { useMessages } from "../../hooks/useMessages";
+import { useNavigate, useParams } from "react-router-dom";
+import { useMessages, useOneMessage } from "../../hooks/useMessages";
 
-const useReplyMessage = (messageItem, onClose) => {
-  const { postMessageReply, isReplying, refetch } = useMessages();
+const getPlainText = (html = "") =>
+  html
+    .replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .trim();
+
+const useReplyMessage = () => {
+  const navigate = useNavigate();
+  const { id } = useParams();
+
+  const {
+    messageItem,
+    isLoading: isPageLoading,
+    error: fetchError,
+  } = useOneMessage(id);
+
+  const { postMessageReply, isReplying } = useMessages();
 
   const [reply, setReply] = useState("");
   const [error, setError] = useState("");
@@ -14,7 +30,9 @@ const useReplyMessage = (messageItem, onClose) => {
   }, [messageItem]);
 
   const validate = () => {
-    if (!reply.trim()) {
+    const plainReply = getPlainText(reply);
+
+    if (!plainReply) {
       setError("Reply is required");
       return false;
     }
@@ -24,7 +42,7 @@ const useReplyMessage = (messageItem, onClose) => {
   };
 
   const handleSave = async () => {
-    if (!messageItem?._id) {
+    if (!id) {
       toast.error("Message not found");
       return;
     }
@@ -33,25 +51,37 @@ const useReplyMessage = (messageItem, onClose) => {
 
     try {
       await postMessageReply({
-        id: messageItem._id,
-        data: { reply: reply.trim() },
+        id,
+        data: {
+          reply: reply.trim(),
+        },
       }).unwrap();
 
-      refetch();
       toast.success("Reply sent successfully");
 
-      if (onClose) onClose();
+      setTimeout(() => {
+        navigate("/all-messages");
+      }, 1000);
     } catch (err) {
       console.error(err);
+
       toast.error(err?.data?.message || "Failed to send reply");
     }
   };
 
   return {
+    id,
+    messageItem,
+
     reply,
     setReply,
+
     error,
+    fetchError,
+
+    isPageLoading,
     isLoading: isReplying,
+
     handleSave,
   };
 };

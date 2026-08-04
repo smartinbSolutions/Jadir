@@ -17,10 +17,12 @@ const mapBranchesFromApi = (branches = []) =>
     name: {
       en: branch?.name?.en || "",
       ar: branch?.name?.ar || "",
+      tr: branch?.name?.tr || "",
     },
     address: {
       en: branch?.address?.en || "",
       ar: branch?.address?.ar || "",
+      tr: branch?.address?.tr || "",
     },
     phones: Array.isArray(branch?.phones) ? branch.phones : [],
   }));
@@ -42,6 +44,7 @@ const EditContactUs = () => {
     setAddress({
       en: contactUs?.address?.en || "",
       ar: contactUs?.address?.ar || "",
+      tr: contactUs?.address?.tr || "",
     });
     setEmails(Array.isArray(contactUs?.emails) ? contactUs.emails : []);
     setPhones(Array.isArray(contactUs?.phones) ? contactUs.phones : []);

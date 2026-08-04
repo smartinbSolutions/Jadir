@@ -3,28 +3,51 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useBlogs } from "../../../hooks/useBlogs";
 
-const buildMultilingualTags = (tagsEN = [], tagsAR = []) => {
-  const maxLength = Math.max(tagsEN.length, tagsAR.length);
+const createEmptyBlogData = () => ({
+  en: {
+    title: "",
+    excerpt: "",
+    authorName: "",
+    authorRole: "",
+    content: "",
+  },
+
+  ar: {
+    title: "",
+    excerpt: "",
+    authorName: "",
+    authorRole: "",
+    content: "",
+  },
+
+  tr: {
+    title: "",
+    excerpt: "",
+    authorName: "",
+    authorRole: "",
+    content: "",
+  },
+});
+
+const buildMultilingualTags = (tagsEN = [], tagsAR = [], tagsTR = []) => {
+  const maxLength = Math.max(tagsEN.length, tagsAR.length, tagsTR.length);
 
   return Array.from({ length: maxLength }, (_, index) => ({
     en: tagsEN[index] || "",
     ar: tagsAR[index] || "",
-  })).filter((tag) => tag.en || tag.ar);
+    tr: tagsTR[index] || "",
+  })).filter((tag) => tag.en || tag.ar || tag.tr);
 };
 
 export const useCreateBlog = () => {
   const navigate = useNavigate();
+
   const { postBlog, isPosting, error } = useBlogs();
 
-  const [blogData, setBlogData] = useState({
-    en: { title: "", excerpt: "", authorRole: "", content: "" },
-    ar: { title: "", excerpt: "", authorRole: "", content: "" },
-    tr: { title: "", excerpt: "", authorRole: "", content: "" },
-  });
+  const [blogData, setBlogData] = useState(createEmptyBlogData);
 
   const [category, setCategory] = useState("");
   const [published, setPublished] = useState(false);
-  const [authorName, setAuthorName] = useState("");
   const [relatedPosts, setRelatedPosts] = useState([]);
 
   const [tagsEN, setTagsEN] = useState([]);
@@ -38,26 +61,32 @@ export const useCreateBlog = () => {
   const [thumbnailPreviews, setThumbnailPreviews] = useState([]);
 
   const resetForm = () => {
-    setBlogData({
-      en: { title: "", excerpt: "", authorRole: "", content: "" },
-      ar: { title: "", excerpt: "", authorRole: "", content: "" },
-      tr: { title: "", excerpt: "", authorRole: "", content: "" },
-    });
+    setBlogData(createEmptyBlogData());
+
     setCategory("");
     setPublished(false);
-    setAuthorName("");
     setRelatedPosts([]);
+
     setTagsEN([]);
     setTagsAR([]);
     setTagsTR([]);
+
     setCoverImage(null);
     setCoverPreview(null);
+
     setThumbnailFile(null);
     setThumbnailPreviews([]);
   };
 
   const handleLangChange = (lang, data) => {
-    setBlogData((prev) => ({ ...prev, [lang]: data }));
+    setBlogData((prev) => ({
+      ...prev,
+
+      [lang]: {
+        ...prev[lang],
+        ...data,
+      },
+    }));
   };
 
   const onCoverChange = (selectedAvatar) => {
@@ -65,18 +94,23 @@ export const useCreateBlog = () => {
 
     if (file) {
       setCoverImage(file);
+
       setCoverPreview(URL.createObjectURL(file));
-    } else {
-      setCoverImage(null);
-      setCoverPreview(null);
+
+      return;
     }
+
+    setCoverImage(null);
+    setCoverPreview(null);
   };
 
-  const onThumbnailsChange = (e) => {
-    const files = Array.from(e?.target?.files || []);
+  const onThumbnailsChange = (event) => {
+    const files = Array.from(event?.target?.files || []);
+
     const firstFile = files[0] || null;
 
     setThumbnailFile(firstFile);
+
     setThumbnailPreviews(firstFile ? [firstFile] : []);
   };
 
@@ -95,13 +129,20 @@ export const useCreateBlog = () => {
         ar: blogData.ar?.content || "",
         tr: blogData.tr?.content || "",
       };
+
       const excerpt = {
         en: blogData.en?.excerpt || "",
         ar: blogData.ar?.excerpt || "",
         tr: blogData.tr?.excerpt || "",
       };
+
       const author = {
-        name: authorName || "",
+        name: {
+          en: blogData.en?.authorName || "",
+          ar: blogData.ar?.authorName || "",
+          tr: blogData.tr?.authorName || "",
+        },
+
         role: {
           en: blogData.en?.authorRole || "",
           ar: blogData.ar?.authorRole || "",
@@ -109,38 +150,44 @@ export const useCreateBlog = () => {
         },
       };
 
-      const tags = buildMultilingualTags(tagsEN, tagsAR);
+      const tags = buildMultilingualTags(tagsEN, tagsAR, tagsTR);
+
+      const relatedPostIds = relatedPosts
+        .map((post) =>
+          typeof post === "string" ? post : post?._id || post?.id,
+        )
+        .filter(Boolean);
 
       formData.append("title", JSON.stringify(title));
-      formData.append("content", JSON.stringify(content));
-      formData.append("excerpt", JSON.stringify(excerpt));
-      formData.append("author", JSON.stringify(author));
-      formData.append("tags", JSON.stringify(tags));
-      formData.append(
-        "relatedPosts",
-        JSON.stringify(
-          relatedPosts
-            .map((post) =>
-              typeof post === "string" ? post : post?._id || post?.id,
-            )
-            .filter(Boolean),
-        ),
-      );
 
-      if (category) formData.append("category", category);
+      formData.append("content", JSON.stringify(content));
+
+      formData.append("excerpt", JSON.stringify(excerpt));
+
+      formData.append("author", JSON.stringify(author));
+
+      formData.append("tags", JSON.stringify(tags));
+
+      formData.append("relatedPosts", JSON.stringify(relatedPostIds));
+
+      if (category) {
+        formData.append("category", category);
+      }
+
       formData.append("published", published ? "true" : "false");
 
-      if (coverImage) {
+      if (coverImage instanceof File) {
         formData.append("image", coverImage);
       }
 
-      if (thumbnailFile) {
+      if (thumbnailFile instanceof File) {
         formData.append("thumbnailImage", thumbnailFile);
       }
 
       await postBlog(formData).unwrap();
 
       toast.success("Blog added successfully");
+
       resetForm();
 
       setTimeout(() => {
@@ -148,6 +195,7 @@ export const useCreateBlog = () => {
       }, 1200);
     } catch (err) {
       console.error(err);
+
       toast.error(err?.data?.message || "Failed to create blog");
     }
   };
@@ -161,15 +209,16 @@ export const useCreateBlog = () => {
 
     published,
     setPublished,
-    authorName,
-    setAuthorName,
+
     relatedPosts,
     setRelatedPosts,
 
     tagsEN,
     setTagsEN,
+
     tagsAR,
     setTagsAR,
+
     tagsTR,
     setTagsTR,
 

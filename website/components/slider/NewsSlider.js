@@ -9,18 +9,33 @@ import BlogImg from "../../public/assets/images/news/news-1.jpg";
 import BlogImgSmall from "../../public/assets/images/news/post-3.jpg";
 
 function getBlogImage(blog, fallback) {
-  const image =
-    blog?.photo ||
+  const imagePath =
+    blog?.imageUrl ||
+    blog?.thumbnailImageUrl ||
     blog?.image ||
-    blog?.thumbnailImage?.[0] ||
-    blog?.thumbnailImage ||
+    blog?.photo ||
+    (Array.isArray(blog?.thumbnailImage)
+      ? blog.thumbnailImage[0]
+      : blog?.thumbnailImage) ||
     "";
 
-  if (!image) return fallback?.src || "";
+  if (!imagePath) {
+    return fallback?.src || "";
+  }
 
-  if (typeof image === "string" && image.startsWith("http")) return image;
+  if (imagePath.startsWith("http")) {
+    return imagePath;
+  }
 
-  return `${imageURL}blogs/${image}`;
+  if (imagePath.startsWith("/")) {
+    return `${imageURL}${imagePath}`;
+  }
+
+  if (imagePath.startsWith("uploads/")) {
+    return `${imageURL}/${imagePath}`;
+  }
+
+  return `${imageURL}/uploads/blogs/${imagePath}`;
 }
 
 // Strip HTML and limit visible words.
@@ -75,6 +90,15 @@ export default function NewsSlider({ news = [] }) {
   }, [news, activeCategory]);
 
   const featuredPost = filteredNews?.[0];
+
+  const featuredAuthorName =
+    typeof featuredPost?.author?.name === "string"
+      ? featuredPost.author.name
+      : featuredPost?.author?.name?.[currentLang] ||
+        featuredPost?.author?.name?.en ||
+        featuredPost?.author?.name?.ar ||
+        featuredPost?.author?.name?.tr ||
+        "Jadir";
   const smallPosts = filteredNews?.slice(1, 3) || [];
   const mobilePosts = filteredNews?.slice(0, 4) || [];
 
@@ -100,7 +124,8 @@ export default function NewsSlider({ news = [] }) {
         </div>
 
         <div className="jadwa-blog-bottom-btn">
-          <Link href="/blog-2" className="jadwa-blog-all-btn">
+          <Link href="/blogs" className="jadwa-blog-all-btn">
+            {" "}
             {currentLang === "ar"
               ? "جميع المقالات"
               : currentLang === "tr"
@@ -125,7 +150,7 @@ export default function NewsSlider({ news = [] }) {
                     </span>
 
                     <span className="jadwa-blog-meta-author">
-                      {featuredPost?.author?.name || "Jadir"}
+                      {featuredAuthorName}
                     </span>
                   </div>
 

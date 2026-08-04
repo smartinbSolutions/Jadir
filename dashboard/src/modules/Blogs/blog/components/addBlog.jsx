@@ -5,28 +5,37 @@ import BlogLangForm from "./BlogLangForm";
 import GeneralInfoTab from "./GeneralInfoTab";
 import { useCreateBlog } from "../hooks/useCreateBlog";
 
+const BLOG_LANGUAGES = ["en", "ar", "tr"];
+
 const AddBlog = () => {
   const {
     blogData,
     handleLangChange,
+
     category,
     setCategory,
+
     published,
     setPublished,
-    authorName,
-    setAuthorName,
+
     relatedPosts,
     setRelatedPosts,
+
     tagsEN,
     setTagsEN,
+
     tagsAR,
     setTagsAR,
+
     tagsTR,
     setTagsTR,
+
     coverPreview,
     onCoverChange,
+
     thumbnailPreviews,
     onThumbnailsChange,
+
     handleSave,
     isLoading,
     error,
@@ -43,8 +52,6 @@ const AddBlog = () => {
           setCategory={setCategory}
           published={published}
           setPublished={setPublished}
-          authorName={authorName}
-          setAuthorName={setAuthorName}
           relatedPosts={relatedPosts}
           setRelatedPosts={setRelatedPosts}
           tagsEN={tagsEN}
@@ -60,42 +67,19 @@ const AddBlog = () => {
         />
       ),
     },
-    {
-      key: "Blog_en",
-      label: "Blog EN",
+
+    ...BLOG_LANGUAGES.map((language) => ({
+      key: `blog_${language}`,
+      label: `Blog ${language.toUpperCase()}`,
       icon: "ki-outline ki-clipboard",
       content: (
         <BlogLangForm
-          language="en"
-          value={blogData.en}
+          language={language}
+          value={blogData?.[language]}
           onChange={handleLangChange}
         />
       ),
-    },
-    {
-      key: "Blog_ar",
-      label: "Blog AR",
-      icon: "ki-outline ki-clipboard",
-      content: (
-        <BlogLangForm
-          language="ar"
-          value={blogData.ar}
-          onChange={handleLangChange}
-        />
-      ),
-    },
-    {
-      key: "Blog_tr",
-      label: "Blog TR",
-      icon: "ki-outline ki-clipboard",
-      content: (
-        <BlogLangForm
-          language="tr"
-          value={blogData.tr}
-          onChange={handleLangChange}
-        />
-      ),
-    },
+    })),
   ];
 
   return (
@@ -106,6 +90,7 @@ const AddBlog = () => {
         <div className="sticky bottom-4 z-20 mt-6 flex justify-end">
           <div className="rounded-2xl border border-gray-200 bg-white/95 p-3 shadow-lg backdrop-blur">
             <button
+              type="button"
               className="btn btn-primary"
               onClick={handleSave}
               disabled={isLoading}
@@ -115,11 +100,12 @@ const AddBlog = () => {
           </div>
         </div>
 
-        {error && (
-          <p className="text-red-500 mt-2">
-            Failed to create blog. Check console for details.
+        {error ? (
+          <p className="mt-2 text-red-500">
+            {error?.data?.message ||
+              "Failed to create blog. Check console for details."}
           </p>
-        )}
+        ) : null}
       </div>
 
       <ToastContainer pauseOnHover />

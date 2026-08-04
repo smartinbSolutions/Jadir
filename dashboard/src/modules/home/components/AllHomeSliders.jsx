@@ -6,7 +6,7 @@ import ErrorMessageCard from "@/components/Global/ErrorMessageCard";
 import AddButton from "@/components/Global/AddButton";
 import { ToastContainer, toast } from "react-toastify";
 import { useHomeSliders } from "../../hooks/useHomeSliders";
-import { imageURL } from "../../../Api/GlobalData";
+import getImageUrl from "../../../utils/getImageUrl";
 
 const AllHomeSliders = () => {
   const navigate = useNavigate();
@@ -61,7 +61,7 @@ const AllHomeSliders = () => {
                       <td>
                         {slider?.img ? (
                           <img
-                            src={`${imageURL}/homeSlider/${slider.img}`}
+                            src={getImageUrl(slider.imageUrl)}
                             alt="slider"
                             className="w-[80px] h-[50px] rounded object-cover border"
                           />

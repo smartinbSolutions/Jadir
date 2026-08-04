@@ -1,12 +1,23 @@
 import Layout from "@/components/layout/Layout";
-import baseURL, { CareersEndPoint, imageURL } from "@/api/GlobalData";
+import baseURL, { CareersEndPoint } from "@/api/GlobalData";
+
 import { fetchJSON, pickArray } from "@/GlobalHooks/GlobalHooks";
 import { useTranslation } from "react-i18next";
 import { localize } from "@/components/website/websiteUtils";
 import { useMemo } from "react";
 import { getPageBanners, resolvePageBanner } from "@/lib/pageBanners";
 import Link from "next/link";
+import getImageUrl from "@/components/utils/getImageUrl";
 
+const FALLBACK_CAREER_IMAGE = "/assets/images/news/news-1.jpg";
+
+const getCareerImage = (career) => {
+  const path =
+    career?.imageUrl ||
+    (career?.image ? `/uploads/careers/${career.image}` : "");
+
+  return path ? getImageUrl(path) : FALLBACK_CAREER_IMAGE;
+};
 const labels = {
   en: {
     breadcrumb: "Career",
@@ -159,9 +170,7 @@ export default function CareerPage({ careers = [], pageBanners = {} }) {
                   const location =
                     localize(career?.location, lang) || copy.remote;
                   const detailUrl = `/career/${career?.slug || career?._id}`;
-                  const imgSrc = career?.image
-                    ? `${imageURL}careers/${career.image}`
-                    : "/assets/images/news/news-1.jpg";
+                  const imgSrc = getCareerImage(career);
 
                   const isExpired =
                     career?.endDate &&
@@ -172,7 +181,14 @@ export default function CareerPage({ careers = [], pageBanners = {} }) {
                       <article className="career-job-card h-100">
                         <div className="career-job-image-wrap">
                           <figure className="career-job-image">
-                            <img src={imgSrc} alt={title} />
+                            <img
+                              src={imgSrc}
+                              alt={title || "Career"}
+                              onError={(event) => {
+                                event.currentTarget.onerror = null;
+                                event.currentTarget.src = FALLBACK_CAREER_IMAGE;
+                              }}
+                            />{" "}
                           </figure>
 
                           <span

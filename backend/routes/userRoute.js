@@ -14,7 +14,7 @@ const userRouter = express.Router();
 userRouter
   .route("/")
   .get(authService.protect, getUsers)
-  .post(authService.protect, createUser);
+  .post( createUser);
 
 userRouter
   .route("/:id")

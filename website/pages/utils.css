@@ -222,3 +222,13 @@
   background: var(--site-blue); /* your brand gold */
   transform: scale(1.1);
 }
+
+:root {
+  --site-title-color: #006afd;
+}
+
+.noto-kufi-app :is(h1, h2, h3, h4, h5, h6),
+.noto-kufi-app :is(h1, h2, h3, h4, h5, h6) a,
+.noto-kufi-app :is(h1, h2, h3, h4, h5, h6) span {
+  color: var(--site-title-color) !important;
+}

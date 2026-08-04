@@ -1,20 +1,28 @@
 import Layout from "@/components/layout/Layout";
 import { EmptyState, SectionTitle } from "@/components/website/PublicSections";
+
 import {
   getWebsiteData,
   localize,
   truncate,
 } from "@/components/website/websiteUtils";
+
+import { getPageBanners, resolvePageBanner } from "@/lib/pageBanners";
+
 import { useTranslation } from "react-i18next";
 import Link from "next/link";
 
-export default function PoliciesPage({ policies = [] }) {
+export default function PoliciesPage({ policies = [], pageBanners = {} }) {
   const { i18n, t } = useTranslation();
+
   const lang = i18n?.language || "en";
   const isRtl = lang === "ar";
 
   return (
-    <Layout breadcrumbTitle={t("policies")}>
+    <Layout
+      breadcrumbTitle={t("policies")}
+      image={resolvePageBanner("policies", pageBanners)}
+    >
       <section
         className={`site-band ${isRtl ? "rtl" : "ltr"}`}
         dir={isRtl ? "rtl" : "ltr"}
@@ -30,7 +38,9 @@ export default function PoliciesPage({ policies = [] }) {
             <div className="row g-4">
               {policies.map((policy, index) => {
                 const href = `/policies/${policy?.slug}`;
+
                 const title = localize(policy?.title, lang);
+
                 const summary = truncate(localize(policy?.summary, lang), 140);
 
                 return (
@@ -50,8 +60,8 @@ export default function PoliciesPage({ policies = [] }) {
                           {lang === "ar"
                             ? "سياسة"
                             : lang === "tr"
-                            ? "Politika"
-                            : "Policy"}
+                              ? "Politika"
+                              : "Policy"}
                         </div>
                       </div>
 
@@ -66,6 +76,7 @@ export default function PoliciesPage({ policies = [] }) {
                       <div className="services-redesign-card-footer">
                         <Link href={href} className="services-redesign-link">
                           <span>{t("learnMore")}</span>
+
                           <i
                             className={`services-redesign-arrow ${
                               isRtl ? "rtl-arrow" : ""
@@ -90,6 +101,31 @@ export default function PoliciesPage({ policies = [] }) {
 }
 
 export async function getStaticProps() {
-  const data = await getWebsiteData();
-  return { props: { policies: data.policies || [] }, revalidate: 300 };
+  try {
+    const [data, pageBanners] = await Promise.all([
+      getWebsiteData(),
+      getPageBanners(),
+    ]);
+
+    return {
+      props: {
+        policies: Array.isArray(data?.policies) ? data.policies : [],
+
+        pageBanners: pageBanners || {},
+      },
+
+      revalidate: 300,
+    };
+  } catch (error) {
+    console.error("Failed to fetch policies page:", error);
+
+    return {
+      props: {
+        policies: [],
+        pageBanners: {},
+      },
+
+      revalidate: 60,
+    };
+  }
 }

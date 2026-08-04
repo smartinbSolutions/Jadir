@@ -2213,15 +2213,44 @@ html[dir="rtl"] .jadwa-featured-card::after {
 }
 
 .jadwa-featured-text {
-  text-align: justify !important;
   margin: 0;
+  padding-inline-end: 12px;
+
+  min-height: 0;
+  max-height: 240px;
+  flex: 1;
+  overflow-y: auto;
+
+  text-align: start !important;
   color: rgba(255, 255, 255, 0.88);
   font-size: 0.9rem;
   font-weight: 600;
   line-height: 1.65;
-  flex: 1;
-  max-height: 240px;
-  overflow-y: auto;
+
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.4) transparent;
+}
+
+.jadwa-featured-text::-webkit-scrollbar {
+  width: 6px;
+}
+
+.jadwa-featured-text::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.jadwa-featured-text::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 999px;
+}
+
+.jadwa-featured-text::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.jadwa-featured-text::-webkit-scrollbar-button {
+  display: none;
 }
 
 .jadwa-stars {
@@ -2339,7 +2368,7 @@ html[dir="rtl"] .jadwa-featured-card::after {
 .jadwa-user {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 14px;
 }
 
 .jadwa-user-small {
@@ -2347,15 +2376,23 @@ html[dir="rtl"] .jadwa-featured-card::after {
 }
 
 .jadwa-avatar {
-  width: 34px;
-  height: 34px;
-  flex: 0 0 34px;
-  border-radius: 999px;
+  width: 54px;
+  height: 54px;
+  flex: 0 0 54px;
+  border-radius: 50%;
+  overflow: hidden;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 10.5px;
+  font-size: 16px;
   font-weight: 700;
+}
+
+.jadwa-avatar img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
 }
 
 .jadwa-avatar-dark {
@@ -2410,28 +2447,99 @@ html[dir="rtl"] .jadwa-featured-card::after {
 ========================================= */
 
 .jadwa-featured-swiper {
-  padding-bottom: 22px;
+  position: relative;
+  padding: 0 0 64px;
+}
+
+.jadwa-featured-swiper-wrap {
+  position: relative;
+  padding-inline: 64px;
+}
+
+.jadwa-featured-swiper {
+  padding-bottom: 32px;
+}
+
+.jadwa-featured-nav {
+  position: absolute;
+  top: calc(50% - 16px);
+  z-index: 30;
+
+  width: 48px;
+  height: 48px;
+  padding: 0;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+  color: var(--site-blue);
+  background: #ffffff;
+  border: 1px solid rgba(0, 2, 79, 0.1);
+  border-radius: 50%;
+  box-shadow: 0 12px 28px rgba(0, 2, 79, 0.16);
+
+  transform: translateY(-50%);
+  transition:
+    color 0.25s ease,
+    background 0.25s ease,
+    border-color 0.25s ease,
+    transform 0.25s ease,
+    opacity 0.25s ease;
+}
+
+.jadwa-featured-prev {
+  left: 4px;
+}
+
+.jadwa-featured-next {
+  right: 4px;
+}
+
+.jadwa-featured-nav:hover {
+  color: #ffffff;
+  background: var(--site-blue);
+  border-color: var(--site-blue);
+  transform: translateY(-50%) scale(1.06);
+}
+
+.jadwa-featured-nav i {
+  pointer-events: none;
+  font-size: 15px;
+}
+
+.jadwa-featured-nav.swiper-button-disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.jadwa-featured-nav.swiper-button-lock {
+  display: none;
+}
+
+.jadwa-featured-swiper .swiper-button-prev {
+  left: 0;
+}
+
+.jadwa-featured-swiper .swiper-button-next {
+  right: 0;
+}
+
+.jadwa-featured-swiper .swiper-button-prev::after,
+.jadwa-featured-swiper .swiper-button-next::after {
+  font-size: 15px;
+  font-weight: 900;
 }
 
 .jadwa-featured-swiper .swiper-pagination {
-  display: flex;
-  justify-content: center;
-  gap: 6px;
+  bottom: 16px !important;
+  pointer-events: none;
 }
 
 .jadwa-featured-swiper .swiper-pagination-bullet {
-  width: 6px;
-  height: 6px;
-  margin: 0 !important;
-  border-radius: 999px;
-  opacity: 1;
-  background: rgba(0, 2, 79, 0.18);
-  transition: all 0.25s ease;
-}
-
-.jadwa-featured-swiper .swiper-pagination-bullet-active {
-  width: 20px;
-  background: var(--site-blue);
+  pointer-events: auto;
 }
 
 /* unused / fallback small cards swiper */

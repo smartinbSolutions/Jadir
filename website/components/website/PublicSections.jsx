@@ -13,7 +13,8 @@ import {
   truncate,
 } from "./websiteUtils";
 import { formatDate } from "@/GlobalHooks/GlobalHooks";
-import baseURL, { imageURL } from "@/api/GlobalData";
+import baseURL from "@/api/GlobalData";
+import getImageUrl from "@/components/utils/getImageUrl";
 import ShareArticle from "@/components/elements/ShareArticle";
 import { useIsMobile } from "@/lib/helpers";
 
@@ -52,8 +53,8 @@ export function HeroImages({ slides = [] }) {
         className="site-hero-swiper"
       >
         {items?.map((slide, index) => {
-          const src = slide?.img
-            ? `${imageURL}homeSlider/${slide.img}`
+          const src = slide?.imageUrl
+            ? getImageUrl(slide.imageUrl)
             : `/assets/images/${slide?.folder || "banner"}/${slide?.image}`;
 
           return (
@@ -186,7 +187,7 @@ export function AboutOverview({ data = {} }) {
                           {truncate(
                             localize(value?.content, lang) ||
                               localize(value?.description, lang),
-                            120
+                            120,
                           )}
                         </span>
                       </li>
@@ -302,24 +303,40 @@ export function ConsultCTA() {
 export function TrustedLogos({ partners = [], companies = [] }) {
   const isMobile = useIsMobile();
   const { i18n, t } = useTranslation();
+
   const lang = i18n.language || "en";
   const isRtl = lang === "ar";
 
-  const items = partners.length
-    ? partners.map((item) => ({
-        id: item?._id,
-        title: localize(item?.title || item?.name, lang),
-        image: `${imageURL}/partners/${item.img}`,
-      }))
-    : companies.map((item) => ({
-        id: item?._id,
-        title: localize(item?.companyName || item?.name, lang),
-        image: asset("companies", item?.logo, "/assets/images/logos/jadir.png"),
-      }));
+  const partnerItems = partners
+    .map((partner) => ({
+      id: `partner-${partner?._id || partner?.id}`,
+      type: "partner",
 
-  if (!items.length) return null;
+      title: localize(partner?.title || partner?.name, lang),
 
-  const repeatedItems = [...items, ...items, ...items];
+      image: getImageUrl(partner?.imageUrl || partner?.logoUrl),
+    }))
+    .filter((item) => item.image);
+
+  const companyItems = companies
+    .map((company) => ({
+      id: `company-${company?._id || company?.id}`,
+      type: "company",
+
+      title: localize(company?.name || company?.companyName, lang),
+
+      image: getImageUrl(company?.imageUrl || company?.logoUrl),
+    }))
+    .filter((item) => item.image);
+
+  const items = [...partnerItems, ...companyItems];
+
+  if (!items.length) {
+    return null;
+  }
+
+  const repeatedItems =
+    items.length > 1 ? [...items, ...items, ...items] : items;
 
   return (
     <section
@@ -331,35 +348,62 @@ export function TrustedLogos({ partners = [], companies = [] }) {
       <div className="auto-container">
         <div className="statistics-head">
           <span className="statistics-subtitle">{t("trustedBy")}</span>
+
           <h2 className="jadwa-services-title">{t("trustedPartners")}</h2>
         </div>
 
         <div className="jadwa-trusted-rail">
           <Swiper
-            key={`trusted-logos-${lang}`}
+            key={`trusted-logos-${lang}-${items.length}`}
             modules={[Autoplay]}
             spaceBetween={isMobile ? 18 : 40}
             slidesPerView={isMobile ? 2 : 3}
-            loop
+            loop={repeatedItems.length > 1}
             speed={5200}
             allowTouchMove={false}
-            autoplay={{
-              delay: 1,
-              disableOnInteraction: false,
-              pauseOnMouseEnter: false,
-            }}
+            autoplay={
+              repeatedItems.length > 1
+                ? {
+                    delay: 1,
+                    disableOnInteraction: false,
+                    pauseOnMouseEnter: false,
+                  }
+                : false
+            }
             breakpoints={{
-              480: { slidesPerView: 2.4, spaceBetween: 12 },
-              640: { slidesPerView: 3, spaceBetween: 14 },
-              768: { slidesPerView: 4, spaceBetween: 16 },
-              1024: { slidesPerView: 4, spaceBetween: 16 },
+              480: {
+                slidesPerView: 2.4,
+                spaceBetween: 12,
+              },
+
+              640: {
+                slidesPerView: 3,
+                spaceBetween: 14,
+              },
+
+              768: {
+                slidesPerView: 4,
+                spaceBetween: 16,
+              },
+
+              1024: {
+                slidesPerView: 4,
+                spaceBetween: 16,
+              },
             }}
             className="jadwa-trusted-swiper"
           >
             {repeatedItems.map((item, index) => (
-              <SwiperSlide key={`${item.id || item.title}-${index}`}>
+              <SwiperSlide key={`${item.id}-${index}`}>
                 <div className="jadwa-trusted-logo-card">
-                  <img src={item.image} alt={item.title || "Partner"} />
+                  <img
+                    src={item.image}
+                    alt={
+                      item.title ||
+                      (item.type === "company" ? "Company" : "Partner")
+                    }
+                    loading="lazy"
+                  />
                 </div>
               </SwiperSlide>
             ))}
@@ -516,11 +560,10 @@ export function ProjectCards({ projects = [], limit }) {
           >
             <div className="jadir-service-related-image">
               <img
-                src={asset(
-                  "projects",
-                  project?.image,
+                src={
+                  getImageUrl(project?.imageUrl) ||
                   "/assets/images/project/project-5.jpg"
-                )}
+                }
                 alt={title}
               />
             </div>
@@ -531,7 +574,7 @@ export function ProjectCards({ projects = [], limit }) {
                 {truncate(
                   localize(project?.brief, lang) ||
                     localize(project?.challenge, lang),
-                  120
+                  120,
                 )}
               </p>
 
@@ -568,20 +611,18 @@ export function BlogCards({ blogs = [], limit }) {
           key={blog?._id || blog?.slug}
         >
           <img
-            src={asset(
-              "blogs",
-              blog?.image || blog?.photo,
-              "/assets/images/news/news-1.jpg"
-            )}
+            src={
+              getImageUrl(blog?.imageUrl) || "/assets/images/news/news-1.jpg"
+            }
             alt={localize(blog?.title, lang)}
           />
           <div>
-            <span>{blog?.author?.name || "Jadir"}</span>
+            <span>{localize(blog?.author?.name, lang) || "Jadir"}</span>{" "}
             <h3>{localize(blog?.title, lang)}</h3>
             <p>
               {truncate(
                 localize(blog?.excerpt, lang) || localize(blog?.content, lang),
-                110
+                110,
               )}
             </p>
           </div>
@@ -655,11 +696,9 @@ export function AboutTabs({ data }) {
             {data.members?.map((member) => (
               <article className="site-person-card" key={member?._id}>
                 <img
-                  src={asset(
-                    "boardMember",
-                    member?.image,
-                    "/assets/images/team/1.jpg"
-                  )}
+                  src={
+                    getImageUrl(member?.imageUrl) || "/assets/images/team/1.jpg"
+                  }
                   alt={localize(member?.name, lang)}
                 />
                 <h3>{localize(member?.name, lang)}</h3>
@@ -667,9 +706,9 @@ export function AboutTabs({ data }) {
                   {truncate(
                     localize(
                       member?.brief || member?.description || member?.position,
-                      lang
+                      lang,
                     ),
-                    120
+                    120,
                   )}
                 </p>
               </article>
@@ -683,11 +722,10 @@ export function AboutTabs({ data }) {
               <article className="site-card" key={company?._id}>
                 <img
                   className="site-card-logo"
-                  src={asset(
-                    "companies",
-                    company?.logo,
+                  src={
+                    getImageUrl(company?.logoUrl) ||
                     "/assets/images/logos/jadir.png"
-                  )}
+                  }
                   alt={localize(company?.companyName, lang)}
                 />
                 <h3>{localize(company?.companyName, lang)}</h3>
@@ -695,9 +733,9 @@ export function AboutTabs({ data }) {
                   {truncate(
                     localize(
                       company?.about || company?.content || company?.aboutus,
-                      lang
+                      lang,
                     ),
-                    150
+                    150,
                   )}
                 </p>
               </article>
@@ -808,7 +846,7 @@ export function BlogFilters({ blogs = [], categories = [] }) {
       const tagMatch =
         !query ||
         (blog?.tags || []).some((tag) =>
-          localize(tag, lang).toLowerCase().includes(query.toLowerCase())
+          localize(tag, lang).toLowerCase().includes(query.toLowerCase()),
         );
       return (titleMatch || tagMatch) && categoryMatch;
     });
@@ -872,16 +910,14 @@ export function BlogDetails({ blog, related = [] }) {
         <main className="site-detail-main">
           <img
             className="site-detail-image"
-            src={asset(
-              "blogs",
-              blog?.image || blog?.photo,
-              "/assets/images/news/news-1.jpg"
-            )}
+            src={
+              getImageUrl(blog?.imageUrl) || "/assets/images/news/news-1.jpg"
+            }
             alt={title}
           />
           <h1>{title}</h1>
           <div className="site-detail-meta">
-            <span>{blog?.author?.name || "Jadir"}</span>
+            <span>{localize(blog?.author?.name, lang) || "Jadir"}</span>{" "}
             <span>{formatDate(blog?.createdAt)}</span>
           </div>
           <article className="site-richtext">{parse(content || "")}</article>

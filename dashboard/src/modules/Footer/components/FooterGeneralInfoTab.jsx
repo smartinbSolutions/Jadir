@@ -1,55 +1,98 @@
-const SummaryCard = ({ icon, label, value, description }) => (
-  <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-    <div className="flex items-center gap-3">
-      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-        <i className={icon}></i>
+const MetricCard = ({ icon, label, value, color = "primary" }) => {
+  const colorClasses = {
+    primary: "bg-primary/10 text-primary",
+    success: "bg-emerald-50 text-emerald-600",
+    danger: "bg-red-50 text-red-600",
+  };
+
+  return (
+    <div className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+      <div
+        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+          colorClasses[color] || colorClasses.primary
+        }`}
+      >
+        <i className={`${icon} text-lg`}></i>
       </div>
-      <div>
-        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">
-          {label}
-        </div>
-        <div className="mt-1 text-sm font-semibold text-gray-900 break-all">
-          {value || "Not set yet"}
-        </div>
+
+      <div className="min-w-0">
+        <p className="text-xs font-medium text-gray-500">{label}</p>
+
+        <p className="mt-0.5 truncate text-base font-semibold text-gray-900">
+          {value}
+        </p>
       </div>
     </div>
-    {description ? (
-      <p className="mt-3 text-sm text-gray-500">{description}</p>
-    ) : null}
+  );
+};
+
+const SectionHeader = ({ icon, title, description, action }) => (
+  <div className="flex flex-col gap-3 border-b border-gray-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex items-start gap-3">
+      {icon ? (
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <i className={`${icon} text-lg`}></i>
+        </div>
+      ) : null}
+
+      <div>
+        <h3 className="text-base font-semibold text-gray-900">{title}</h3>
+
+        {description ? (
+          <p className="mt-0.5 text-sm text-gray-500">{description}</p>
+        ) : null}
+      </div>
+    </div>
+
+    {action}
   </div>
 );
 
-const SectionField = ({
+const CompactField = ({
   label,
   placeholder,
   value,
   onChange,
   type = "text",
+  disabled = false,
+  dir,
 }) => (
-  <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-    <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">
+  <div className="min-w-0">
+    <label className="mb-1.5 block text-xs font-medium text-gray-500">
       {label}
     </label>
+
     <input
       type={type}
-      className="input"
-      value={value}
+      className={`input w-full ${
+        disabled ? "cursor-not-allowed bg-gray-100 text-gray-400" : ""
+      }`}
+      value={value || ""}
       onChange={onChange}
       placeholder={placeholder}
+      disabled={disabled}
+      dir={dir}
     />
   </div>
 );
 
-const WorkingScheduleEditor = ({ schedule = [], setSchedule }) => {
-  const updateDay = (index, group, lang, value) => {
+const WorkingScheduleEditor = ({
+  schedule = [],
+  setSchedule,
+  workingStartTime,
+  setWorkingStartTime,
+  workingEndTime,
+  setWorkingEndTime,
+}) => {
+  const updateDayLanguage = (index, language, value) => {
     setSchedule((prev) =>
       prev.map((item, currentIndex) =>
         currentIndex === index
           ? {
               ...item,
-              [group]: {
-                ...(item[group] || {}),
-                [lang]: value,
+              day: {
+                ...(item.day || {}),
+                [language]: value,
               },
             }
           : item,
@@ -60,120 +103,214 @@ const WorkingScheduleEditor = ({ schedule = [], setSchedule }) => {
   const updateClosed = (index, isClosed) => {
     setSchedule((prev) =>
       prev.map((item, currentIndex) =>
-        currentIndex === index ? { ...item, isClosed } : item,
+        currentIndex === index
+          ? {
+              ...item,
+              isClosed,
+            }
+          : item,
       ),
     );
   };
 
   return (
-    <div className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
-      <div className="mb-5">
-        <h3 className="text-lg font-semibold text-gray-900">
-          Working Days & Hours
-        </h3>
-        <p className="mt-1 text-sm text-gray-500">
-          Set every day separately in English and Arabic. Mark a day as closed
-          when there are no working hours.
+    <section className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
+      <SectionHeader
+        icon="ki-outline ki-calendar"
+        title="Working Days & Hours"
+        description="Set one working time range and choose which days are closed."
+      />
+
+      <div className="border-b border-gray-100 bg-gray-50/60 p-5">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <CompactField
+            label="Working start time"
+            type="time"
+            value={workingStartTime}
+            onChange={(event) => setWorkingStartTime(event.target.value)}
+          />
+
+          <CompactField
+            label="Working end time"
+            type="time"
+            value={workingEndTime}
+            onChange={(event) => setWorkingEndTime(event.target.value)}
+          />
+        </div>
+
+        <p className="mt-3 text-xs text-gray-500">
+          This time range will be used for every open working day.
         </p>
       </div>
 
-      <div className="space-y-4">
+      <div className="hidden border-b border-gray-100 bg-gray-50/80 px-5 py-3 xl:grid xl:grid-cols-[1fr_1fr_1fr_100px] xl:gap-3">
+        <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+          English
+        </span>
+
+        <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+          Arabic
+        </span>
+
+        <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+          Turkish
+        </span>
+
+        <span className="text-center text-xs font-semibold uppercase tracking-wide text-gray-400">
+          Closed
+        </span>
+      </div>
+
+      <div className="divide-y divide-gray-100">
         {schedule.map((day, index) => (
           <div
             key={day.key || index}
-            className="rounded-3xl border border-gray-200 bg-gray-50 p-4"
+            className={`px-5 py-4 transition-colors ${
+              day.isClosed ? "bg-red-50/40" : "hover:bg-gray-50/60"
+            }`}
           >
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h4 className="text-sm font-semibold text-gray-900">
+            <div className="mb-3 flex items-center justify-between xl:hidden">
+              <div className="flex items-center gap-2">
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-xs font-semibold text-primary">
+                  {index + 1}
+                </span>
+
+                <span className="text-sm font-semibold text-gray-900">
                   {day?.day?.en || `Day ${index + 1}`}
-                </h4>
-                <p className="mt-1 text-xs text-gray-500">
-                  Schedule row {index + 1}
-                </p>
+                </span>
               </div>
 
-              <label className="flex items-center gap-2 rounded-full bg-white px-3 py-2 text-xs font-semibold text-gray-600 shadow-sm">
-                <input
-                  type="checkbox"
-                  checked={Boolean(day.isClosed)}
-                  onChange={(e) => updateClosed(index, e.target.checked)}
-                />
-                Closed
-              </label>
+              {day.isClosed ? (
+                <span className="rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-600">
+                  Closed
+                </span>
+              ) : null}
             </div>
 
-            <div className="grid gap-4 xl:grid-cols-2">
-              <div className="rounded-2xl border border-gray-200 bg-white p-4">
-                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">
-                  Day EN
-                </label>
-                <input
-                  type="text"
-                  className="input"
-                  value={day?.day?.en || ""}
-                  onChange={(e) =>
-                    updateDay(index, "day", "en", e.target.value)
-                  }
-                  placeholder="Monday"
-                />
-              </div>
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-[1fr_1fr_1fr_100px] xl:items-end">
+              <CompactField
+                label="English"
+                value={day?.day?.en}
+                onChange={(event) =>
+                  updateDayLanguage(index, "en", event.target.value)
+                }
+                placeholder="Monday"
+              />
 
-              <div className="rounded-2xl border border-gray-200 bg-white p-4">
-                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">
-                  Day AR
-                </label>
-                <input
-                  type="text"
-                  className="input text-right"
-                  dir="rtl"
-                  value={day?.day?.ar || ""}
-                  onChange={(e) =>
-                    updateDay(index, "day", "ar", e.target.value)
-                  }
-                  placeholder="الاثنين"
-                />
-              </div>
+              <CompactField
+                label="Arabic"
+                value={day?.day?.ar}
+                onChange={(event) =>
+                  updateDayLanguage(index, "ar", event.target.value)
+                }
+                placeholder="الاثنين"
+                dir="rtl"
+              />
 
-              <div className="rounded-2xl border border-gray-200 bg-white p-4">
-                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">
-                  Hours EN
-                </label>
-                <input
-                  type="text"
-                  className="input"
-                  value={day?.hours?.en || ""}
-                  disabled={day.isClosed}
-                  onChange={(e) =>
-                    updateDay(index, "hours", "en", e.target.value)
-                  }
-                  placeholder="09:00 - 17:00"
-                />
-              </div>
+              <CompactField
+                label="Turkish"
+                value={day?.day?.tr}
+                onChange={(event) =>
+                  updateDayLanguage(index, "tr", event.target.value)
+                }
+                placeholder="Pazartesi"
+              />
 
-              <div className="rounded-2xl border border-gray-200 bg-white p-4">
-                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">
-                  Hours AR
-                </label>
+              <label className="flex h-[42px] cursor-pointer items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-3 text-sm font-medium text-gray-600">
                 <input
-                  type="text"
-                  className="input text-right"
-                  dir="rtl"
-                  value={day?.hours?.ar || ""}
-                  disabled={day.isClosed}
-                  onChange={(e) =>
-                    updateDay(index, "hours", "ar", e.target.value)
+                  type="checkbox"
+                  className="h-4 w-4 accent-primary"
+                  checked={Boolean(day.isClosed)}
+                  onChange={(event) =>
+                    updateClosed(index, event.target.checked)
                   }
-                  placeholder="09:00 - 17:00"
                 />
-              </div>
+
+                <span className="xl:hidden">Closed</span>
+              </label>
             </div>
           </div>
         ))}
       </div>
-    </div>
+    </section>
   );
 };
+
+const QuickLinksEditor = ({
+  links = [],
+  addLink,
+  removeLink,
+  updateLinkField,
+}) => (
+  <section className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
+    <SectionHeader
+      icon="ki-outline ki-link"
+      title="Quick Links"
+      description="Manage the footer navigation links."
+      action={
+        <button
+          type="button"
+          className="btn btn-primary btn-sm"
+          onClick={addLink}
+        >
+          <i className="ki-outline ki-plus"></i>
+          Add Link
+        </button>
+      }
+    />
+
+    <div className="hidden border-b border-gray-100 bg-gray-50/80 px-5 py-3 md:grid md:grid-cols-[1fr_1.5fr_40px] md:gap-3">
+      <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+        Title
+      </span>
+
+      <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+        URL
+      </span>
+
+      <span />
+    </div>
+
+    <div className="divide-y divide-gray-100">
+      {links.map((item, index) => (
+        <div
+          key={index}
+          className="grid gap-3 px-5 py-4 transition-colors hover:bg-gray-50/60 md:grid-cols-[1fr_1.5fr_40px] md:items-end"
+        >
+          <CompactField
+            label="Title"
+            value={item.title}
+            onChange={(event) =>
+              updateLinkField(index, "title", event.target.value)
+            }
+            placeholder="About us"
+          />
+
+          <CompactField
+            label="URL"
+            value={item.link}
+            onChange={(event) =>
+              updateLinkField(index, "link", event.target.value)
+            }
+            placeholder="/about"
+          />
+
+          <button
+            type="button"
+            className="flex h-[42px] w-full items-center justify-center rounded-xl border border-red-200 text-red-500 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-300 md:w-10"
+            onClick={() => removeLink(index)}
+            disabled={links.length === 1}
+            title="Remove link"
+          >
+            <i className="ki-outline ki-trash text-lg"></i>
+
+            <span className="ml-2 md:hidden">Remove</span>
+          </button>
+        </div>
+      ))}
+    </div>
+  </section>
+);
 
 const FooterGeneralInfoTab = ({
   facebook,
@@ -188,201 +325,132 @@ const FooterGeneralInfoTab = ({
   setPhone,
   email,
   setEmail,
-  workDays,
-  setWorkDays,
-  workingHours,
-  setWorkingHours,
-  workingSchedule,
+
+  workingStartTime,
+  setWorkingStartTime,
+  workingEndTime,
+  setWorkingEndTime,
+
+  workingSchedule = [],
   setWorkingSchedule,
-  links,
+
+  links = [],
   addLink,
   removeLink,
   updateLinkField,
 }) => {
+  const configuredDays = workingSchedule.filter(
+    (day) => day?.day?.en || day?.day?.ar || day?.day?.tr,
+  ).length;
+
+  const openDays = workingSchedule.filter((day) => !day?.isClosed).length;
+
+  const closedDays = workingSchedule.filter((day) => day?.isClosed).length;
+
   return (
-    <div className="space-y-6">
-      <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-        <div className="space-y-6">
-          <div className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
-            <div className="mb-5">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Footer Contact Details
-              </h3>
-              <p className="mt-1 text-sm text-gray-500">
-                These details usually appear in the footer and contact areas.
-              </p>
-            </div>
+    <div className="space-y-5">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <MetricCard
+          icon="ki-outline ki-calendar-tick"
+          label="Configured Days"
+          value={`${configuredDays} / ${workingSchedule.length || 7}`}
+        />
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <SectionField
-                label="Phone"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="Enter phone number"
-              />
-              <SectionField
-                label="Email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter footer email"
-              />
-              <SectionField
-                label="Legacy Work Days"
-                value={workDays}
-                onChange={(e) => setWorkDays(e.target.value)}
-                placeholder="Fallback only, example: Monday - Friday"
-              />
-              <SectionField
-                label="Legacy Working Hours"
-                value={workingHours}
-                onChange={(e) => setWorkingHours(e.target.value)}
-                placeholder="Fallback only, example: 09:00 - 18:00"
-              />
-            </div>
-          </div>
+        <MetricCard
+          icon="ki-outline ki-time"
+          label="Open Days"
+          value={openDays}
+          color="success"
+        />
 
-          <WorkingScheduleEditor
-            schedule={workingSchedule}
-            setSchedule={setWorkingSchedule}
+        <MetricCard
+          icon="ki-outline ki-calendar-remove"
+          label="Closed Days"
+          value={closedDays}
+          color="danger"
+        />
+      </div>
+
+      <div className="grid gap-5 xl:grid-cols-2">
+        <section className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
+          <SectionHeader
+            icon="ki-outline ki-address-book"
+            title="Contact Details"
+            description="Main contact information displayed in the footer."
           />
 
-          <div className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
-            <div className="mb-5">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Social Media
-              </h3>
-              <p className="mt-1 text-sm text-gray-500">
-                Add the channels that should be available in the footer.
-              </p>
-            </div>
+          <div className="grid gap-4 p-5 sm:grid-cols-2">
+            <CompactField
+              label="Phone"
+              value={phone}
+              onChange={(event) => setPhone(event.target.value)}
+              placeholder="Enter phone number"
+            />
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <SectionField
-                label="Facebook"
-                value={facebook}
-                onChange={(e) => setFacebook(e.target.value)}
-                placeholder="Facebook URL"
-              />
-              <SectionField
-                label="Instagram"
-                value={instagram}
-                onChange={(e) => setInstagram(e.target.value)}
-                placeholder="Instagram URL"
-              />
-              <SectionField
-                label="X / Twitter"
-                value={xTwitter}
-                onChange={(e) => setXTwitter(e.target.value)}
-                placeholder="X or Twitter URL"
-              />
-              <SectionField
-                label="LinkedIn"
-                value={linkedin}
-                onChange={(e) => setLinkedin(e.target.value)}
-                placeholder="LinkedIn URL"
-              />
-            </div>
+            <CompactField
+              label="Email"
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="Enter footer email"
+            />
           </div>
-        </div>
+        </section>
 
-        <div className="space-y-6">
-          <div className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
-            <h3 className="text-lg font-semibold text-gray-900">
-              Footer Snapshot
-            </h3>
-            <div className="mt-4 space-y-4">
-              <SummaryCard
-                icon="ki-outline ki-phone"
-                label="Primary Phone"
-                value={phone}
-                description="Used as the main footer contact number."
-              />
-              <SummaryCard
-                icon="ki-outline ki-sms"
-                label="Primary Email"
-                value={email}
-                description="Used as the main footer contact email."
-              />
-              <SummaryCard
-                icon="ki-outline ki-time"
-                label="Working Schedule"
-                value={
-                  workingSchedule?.length
-                    ? `${workingSchedule.length} days configured`
-                    : workDays || workingHours
-                      ? `${workDays || "Days not set"}${workingHours ? ` - ${workingHours}` : ""}`
-                      : ""
-                }
-                description="Shows daily availability in both languages."
-              />
-            </div>
+        <section className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
+          <SectionHeader
+            icon="ki-outline ki-share"
+            title="Social Media"
+            description="Social channels displayed in the footer."
+          />
+
+          <div className="grid gap-4 p-5 sm:grid-cols-2">
+            <CompactField
+              label="Facebook"
+              value={facebook}
+              onChange={(event) => setFacebook(event.target.value)}
+              placeholder="Facebook URL"
+            />
+
+            <CompactField
+              label="Instagram"
+              value={instagram}
+              onChange={(event) => setInstagram(event.target.value)}
+              placeholder="Instagram URL"
+            />
+
+            <CompactField
+              label="X / Twitter"
+              value={xTwitter}
+              onChange={(event) => setXTwitter(event.target.value)}
+              placeholder="X or Twitter URL"
+            />
+
+            <CompactField
+              label="LinkedIn"
+              value={linkedin}
+              onChange={(event) => setLinkedin(event.target.value)}
+              placeholder="LinkedIn URL"
+            />
           </div>
-        </div>
+        </section>
       </div>
 
-      <div className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
-        <div className="flex flex-col gap-4 border-b border-gray-100 pb-5 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">Quick Links</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              Manage the links that appear in the footer navigation area.
-            </p>
-          </div>
+      <WorkingScheduleEditor
+        schedule={workingSchedule}
+        setSchedule={setWorkingSchedule}
+        workingStartTime={workingStartTime}
+        setWorkingStartTime={setWorkingStartTime}
+        workingEndTime={workingEndTime}
+        setWorkingEndTime={setWorkingEndTime}
+      />
 
-          <button type="button" className="btn btn-primary" onClick={addLink}>
-            <i className="ki-outline ki-plus mr-1"></i>
-            Add Link
-          </button>
-        </div>
-
-        <div className="mt-6 grid gap-4 xl:grid-cols-2">
-          {links.map((item, index) => (
-            <div
-              key={index}
-              className="rounded-3xl border border-gray-200 bg-gray-50 p-5 shadow-sm"
-            >
-              <div className="mb-4 flex items-center justify-between">
-                <div>
-                  <h4 className="text-base font-semibold text-gray-900">
-                    {item.title || `Link ${index + 1}`}
-                  </h4>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <SectionField
-                  label="Title"
-                  value={item.title}
-                  onChange={(e) =>
-                    updateLinkField(index, "title", e.target.value)
-                  }
-                  placeholder="Enter link title"
-                />
-                <SectionField
-                  label="URL"
-                  value={item.link}
-                  onChange={(e) =>
-                    updateLinkField(index, "link", e.target.value)
-                  }
-                  placeholder="Enter link URL"
-                />
-              </div>
-
-              <div className="mt-4 flex justify-end">
-                <button
-                  type="button"
-                  className="btn btn-danger btn-outline"
-                  onClick={() => removeLink(index)}
-                  disabled={links.length === 1}
-                >
-                  Remove
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      <QuickLinksEditor
+        links={links}
+        addLink={addLink}
+        removeLink={removeLink}
+        updateLinkField={updateLinkField}
+      />
     </div>
   );
 };

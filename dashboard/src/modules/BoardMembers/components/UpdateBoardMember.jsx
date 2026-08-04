@@ -49,7 +49,7 @@ const UpdateBoardMember = () => {
         />
       ),
     },
-    ...["en", "ar"].map((lang) => ({
+    ...["en", "ar" , "tr"].map((lang) => ({
       key: `board_member_${lang}`,
       label: `Board Member ${lang.toUpperCase()}`,
       icon: "ki-outline ki-clipboard",

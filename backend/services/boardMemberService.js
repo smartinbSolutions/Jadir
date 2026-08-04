@@ -5,6 +5,29 @@ const { uploadSingleImage } = require("../middlewares/uploadingImage");
 const { v4: uuidv4 } = require("uuid");
 const sharp = require("sharp");
 const { default: slugify } = require("slugify");
+const fs = require("fs");
+const path = require("path");
+
+const BOARD_MEMBERS_UPLOAD_DIRECTORY = path.resolve(
+  process.cwd(),
+  "uploads",
+  "boardMember",
+);
+
+const deleteBoardMemberImageFile = async (filename) => {
+  if (!filename || typeof filename !== "string") return;
+
+  const safeFilename = path.basename(filename);
+  const filePath = path.join(BOARD_MEMBERS_UPLOAD_DIRECTORY, safeFilename);
+
+  try {
+    await fs.promises.unlink(filePath);
+  } catch (error) {
+    if (error.code !== "ENOENT") {
+      console.error(`Failed to delete board member image: ${filePath}`, error);
+    }
+  }
+};
 
 const safeParseJSON = (value, fieldName) => {
   if (value === undefined || value === null) return value;
@@ -18,7 +41,7 @@ const safeParseJSON = (value, fieldName) => {
 };
 
 const buildSlug = (name = {}) => {
-  const base = name?.en || name?.ar || "";
+  const base = name?.en || name?.ar || name?.tr || "";
   return slugify(base, { lower: true, strict: true, trim: true });
 };
 
@@ -27,12 +50,16 @@ exports.uploadBoardMemberImage = uploadSingleImage("image");
 exports.resizeBoardMemberImages = asyncHandler(async (req, res, next) => {
   if (!req.file) return next();
 
+  fs.mkdirSync(BOARD_MEMBERS_UPLOAD_DIRECTORY, {
+    recursive: true,
+  });
+
   const filename = `board-member-${uuidv4()}-${Date.now()}.webp`;
 
   await sharp(req.file.buffer)
     .toFormat("webp")
     .webp({ quality: 70 })
-    .toFile(`uploads/boardMember/${filename}`);
+    .toFile(path.join(BOARD_MEMBERS_UPLOAD_DIRECTORY, filename));
 
   req.body.image = filename;
 
@@ -61,6 +88,7 @@ exports.getBoardMembers = asyncHandler(async (req, res) => {
     query.$or = [
       { "name.ar": { $regex: safeKeyword, $options: "i" } },
       { "name.en": { $regex: safeKeyword, $options: "i" } },
+      { "name.tr": { $regex: safeKeyword, $options: "i" } },
     ];
   }
 
@@ -111,11 +139,16 @@ exports.getPublicBoardMembers = asyncHandler(async (req, res) => {
 
 exports.createBoardMember = asyncHandler(async (req, res) => {
   req.body.name = safeParseJSON(req.body.name, "name");
+  req.body.position = safeParseJSON(req.body.position, "position");
   req.body.bio = safeParseJSON(req.body.bio, "bio");
 
   if (req.body.isFounder !== undefined) {
     req.body.isFounder =
       req.body.isFounder === true || req.body.isFounder === "true";
+  }
+
+  if (req.body.order !== undefined) {
+    req.body.order = Number(req.body.order);
   }
 
   req.body.slug = buildSlug(req.body.name);
@@ -166,8 +199,24 @@ exports.getBoardMemberBySlug = asyncHandler(async (req, res, next) => {
 exports.updateBoardMember = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
 
+  const existingMember = await boardMemberModel.findById(id);
+
+  if (!existingMember) {
+    return next(new ApiError(`No Board Member found for this id: ${id}`, 404));
+  }
+
+  const removeImage =
+    req.body.removeImage === true || req.body.removeImage === "true";
+
+  // حقل تحكم فقط
+  delete req.body.removeImage;
+
   if (req.body.name !== undefined) {
     req.body.name = safeParseJSON(req.body.name, "name");
+  }
+
+  if (req.body.position !== undefined) {
+    req.body.position = safeParseJSON(req.body.position, "position");
   }
 
   if (req.body.bio !== undefined) {
@@ -179,8 +228,17 @@ exports.updateBoardMember = asyncHandler(async (req, res, next) => {
       req.body.isFounder === true || req.body.isFounder === "true";
   }
 
+  if (req.body.order !== undefined) {
+    req.body.order = Number(req.body.order) || 0;
+  }
+
   if (req.body.name) {
     req.body.slug = buildSlug(req.body.name);
+  }
+
+  // الصورة الجديدة تأخذ الأولوية
+  if (removeImage && !req.body.image) {
+    req.body.image = "";
   }
 
   const updatedMember = await boardMemberModel.findByIdAndUpdate(id, req.body, {
@@ -188,8 +246,8 @@ exports.updateBoardMember = asyncHandler(async (req, res, next) => {
     runValidators: true,
   });
 
-  if (!updatedMember) {
-    return next(new ApiError(`No Board Member found for this id: ${id}`, 404));
+  if (existingMember.image && existingMember.image !== updatedMember.image) {
+    await deleteBoardMemberImageFile(existingMember.image);
   }
 
   res.status(200).json({
@@ -202,11 +260,13 @@ exports.updateBoardMember = asyncHandler(async (req, res, next) => {
 exports.deleteBoardMember = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
 
-  const member = await boardMemberModel.findByIdAndDelete(id);
+  const deletedMember = await boardMemberModel.findByIdAndDelete(id);
 
-  if (!member) {
+  if (!deletedMember) {
     return next(new ApiError(`No Board Member found for this id: ${id}`, 404));
   }
+
+  await deleteBoardMemberImageFile(deletedMember.image);
 
   res.status(200).json({
     status: true,

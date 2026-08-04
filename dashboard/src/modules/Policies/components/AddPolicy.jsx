@@ -47,7 +47,7 @@ const AddPolicy = () => {
         />
       ),
     },
-    ...["en", "ar"].map((lang) => ({
+    ...["en", "ar", "tr"].map((lang) => ({
       key: `policy_${lang}`,
       label: `Policy ${lang.toUpperCase()}`,
       icon: "ki-outline ki-clipboard",
@@ -67,7 +67,11 @@ const AddPolicy = () => {
     <Container>
       <Tabs tabs={tabConfig} />
       <div className="mt-6">
-        <button className="btn btn-primary" onClick={handleSave} disabled={isPosting}>
+        <button
+          className="btn btn-primary"
+          onClick={handleSave}
+          disabled={isPosting}
+        >
           {isPosting ? "Submitting..." : "Create Policy"}
         </button>
       </div>

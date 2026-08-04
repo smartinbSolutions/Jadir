@@ -29,7 +29,7 @@ const PartnerFormCard = ({
             <div className="space-y-4">
               <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
                 <div className="grid gap-4 md:grid-cols-2">
-                  {["en", "ar"].map((lang) => (
+                  {["en", "ar", "tr"].map((lang) => (
                     <div key={lang}>
                       <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">
                         Title ({lang})
@@ -53,7 +53,7 @@ const PartnerFormCard = ({
 
               <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
                 <div className="grid gap-4 md:grid-cols-2">
-                  {["en", "ar"].map((lang) => (
+                  {["en", "ar", "tr"].map((lang) => (
                     <div key={lang}>
                       <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">
                         Brief ({lang})
@@ -76,7 +76,7 @@ const PartnerFormCard = ({
 
               <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
                 <div className="grid gap-4 md:grid-cols-2">
-                  {["en", "ar"].map((lang) => (
+                  {["en", "ar", "tr"].map((lang) => (
                     <div key={lang}>
                       <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">
                         Testimonial ({lang})

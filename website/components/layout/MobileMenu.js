@@ -35,7 +35,10 @@ const navIcons = {
 
 const MobileMenu = ({ handleMobileMenu, isMobileMenu, footerData }) => {
   const { i18n, t } = useTranslation();
-  const currentLang = i18n?.language || "en";
+  const currentLang = (i18n?.resolvedLanguage || i18n?.language || "en").split(
+    "-",
+  )[0];
+
   const isAr = currentLang === "ar";
 
   const socialLinks = useMemo(

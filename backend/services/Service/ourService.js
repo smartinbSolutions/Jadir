@@ -7,6 +7,28 @@ const { v4: uuidv4 } = require("uuid");
 const sharp = require("sharp");
 const safeParseJSON = require("../../utils/safeParseJson");
 const buildSlug = require("../../utils/buildSlug");
+const path = require("path");
+
+const SERVICES_UPLOAD_DIRECTORY = path.resolve(
+  process.cwd(),
+  "uploads",
+  "ourServices",
+);
+
+const deleteServiceBannerFile = async (filename) => {
+  if (!filename || typeof filename !== "string") return;
+
+  const safeFilename = path.basename(filename);
+  const filePath = path.join(SERVICES_UPLOAD_DIRECTORY, safeFilename);
+
+  try {
+    await fs.promises.unlink(filePath);
+  } catch (error) {
+    if (error.code !== "ENOENT") {
+      console.error(`Failed to delete service banner: ${filePath}`, error);
+    }
+  }
+};
 
 const parseLocalizedArray = (value, fieldName) => {
   const parsed = safeParseJSON(value, fieldName);
@@ -15,14 +37,13 @@ const parseLocalizedArray = (value, fieldName) => {
 
   const ensureArray = (items) =>
     Array.isArray(items)
-      ? items
-          .map((item) => `${item ?? ""}`.trim())
-          .filter(Boolean)
+      ? items.map((item) => `${item ?? ""}`.trim()).filter(Boolean)
       : [];
 
   return {
     ar: ensureArray(parsed?.ar),
     en: ensureArray(parsed?.en),
+    tr: ensureArray(parsed?.tr),
   };
 };
 
@@ -40,7 +61,9 @@ const parseIdArray = (value, fieldName) => {
 const parseTestimonials = (value, fieldName) => {
   const parsed = safeParseJSON(value, fieldName);
 
-  if (parsed === undefined || parsed === null) return undefined;
+  if (parsed === undefined || parsed === null) {
+    return undefined;
+  }
 
   const rawItems = Array.isArray(parsed)
     ? parsed
@@ -50,21 +73,42 @@ const parseTestimonials = (value, fieldName) => {
 
   return rawItems
     .map((item) => ({
-      clientName: item?.clientName || {},
-      clientRole: item?.clientRole || {},
-      quote: item?.quote || {},
+      clientName: {
+        ar: item?.clientName?.ar || "",
+        en: item?.clientName?.en || "",
+        tr: item?.clientName?.tr || "",
+      },
+
+      clientRole: {
+        ar: item?.clientRole?.ar || "",
+        en: item?.clientRole?.en || "",
+        tr: item?.clientRole?.tr || "",
+      },
+
+      quote: {
+        ar: item?.quote?.ar || "",
+        en: item?.quote?.en || "",
+        tr: item?.quote?.tr || "",
+      },
     }))
     .filter((item) => {
-      const hasQuote = item.quote?.en || item.quote?.ar;
-      const hasName = item.clientName?.en || item.clientName?.ar;
-      const hasRole = item.clientRole?.en || item.clientRole?.ar;
+      const hasQuote = item.quote.en || item.quote.ar || item.quote.tr;
 
-      return hasQuote || hasName || hasRole;
+      const hasName =
+        item.clientName.en || item.clientName.ar || item.clientName.tr;
+
+      const hasRole =
+        item.clientRole.en || item.clientRole.ar || item.clientRole.tr;
+
+      return Boolean(hasQuote || hasName || hasRole);
     });
 };
 
 const servicePopulate = [
-  { path: "relatedProjects", select: "title slug image brief challenge solution result" },
+  {
+    path: "relatedProjects",
+    select: "title slug image brief challenge solution result",
+  },
   { path: "relatedServices", select: "title slug bannerImage description" },
 ];
 
@@ -117,11 +161,17 @@ const normalizeServicePayload = (body) => {
   }
 
   if (body.relatedProjects !== undefined) {
-    body.relatedProjects = parseIdArray(body.relatedProjects, "relatedProjects");
+    body.relatedProjects = parseIdArray(
+      body.relatedProjects,
+      "relatedProjects",
+    );
   }
 
   if (body.relatedServices !== undefined) {
-    body.relatedServices = parseIdArray(body.relatedServices, "relatedServices");
+    body.relatedServices = parseIdArray(
+      body.relatedServices,
+      "relatedServices",
+    );
   }
 
   if (body.order !== undefined) {
@@ -131,12 +181,7 @@ const normalizeServicePayload = (body) => {
 
 // Admin list
 exports.getOurServices = asyncHandler(async (req, res) => {
-  const {
-    keyword,
-    page = 1,
-    limit = 10,
-    sort = "order createdAt",
-  } = req.query;
+  const { keyword, page = 1, limit = 10, sort = "order createdAt" } = req.query;
 
   const query = {};
 
@@ -146,8 +191,10 @@ exports.getOurServices = asyncHandler(async (req, res) => {
     query.$or = [
       { "title.ar": { $regex: safeKeyword, $options: "i" } },
       { "title.en": { $regex: safeKeyword, $options: "i" } },
+      { "title.tr": { $regex: safeKeyword, $options: "i" } },
       { "description.ar": { $regex: safeKeyword, $options: "i" } },
       { "description.en": { $regex: safeKeyword, $options: "i" } },
+      { "description.tr": { $regex: safeKeyword, $options: "i" } },
     ];
   }
 
@@ -227,15 +274,38 @@ exports.getOneOurService = asyncHandler(async (req, res, next) => {
 
 exports.updateOurService = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
+
+  const existingService = await OurServiceModel.findById(id);
+
+  if (!existingService) {
+    return next(new ApiError(`No Service found for this id: ${id}`, 404));
+  }
+
+  const removeBannerImage =
+    req.body.removeBannerImage === true ||
+    req.body.removeBannerImage === "true";
+
+  // حقل تحكم وليس جزءاً من الموديل
+  delete req.body.removeBannerImage;
+
   normalizeServicePayload(req.body);
+
+  // الصورة الجديدة تأخذ الأولوية على طلب الحذف
+  if (removeBannerImage && !req.body.bannerImage) {
+    req.body.bannerImage = "";
+  }
 
   const updatedService = await OurServiceModel.findByIdAndUpdate(id, req.body, {
     new: true,
     runValidators: true,
   }).populate(servicePopulate);
 
-  if (!updatedService) {
-    return next(new ApiError(`No Service found for this id: ${id}`, 404));
+  // حذف الصورة القديمة عند الحذف أو الاستبدال
+  if (
+    existingService.bannerImage &&
+    existingService.bannerImage !== updatedService.bannerImage
+  ) {
+    await deleteServiceBannerFile(existingService.bannerImage);
   }
 
   res.status(200).json({
@@ -248,11 +318,13 @@ exports.updateOurService = asyncHandler(async (req, res, next) => {
 exports.deleteOurService = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
 
-  const service = await OurServiceModel.findByIdAndDelete(id);
+  const deletedService = await OurServiceModel.findByIdAndDelete(id);
 
-  if (!service) {
+  if (!deletedService) {
     return next(new ApiError(`No Service found for this id: ${id}`, 404));
   }
+
+  await deleteServiceBannerFile(deletedService.bannerImage);
 
   res.status(200).json({
     status: true,

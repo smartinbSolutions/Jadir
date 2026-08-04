@@ -2,35 +2,89 @@
 
 import { useTranslation } from "react-i18next";
 import { Swiper, SwiperSlide } from "swiper/react";
+
 import { Navigation, Pagination, Autoplay } from "swiper/modules";
-import { truncateText } from "@/GlobalHooks/GlobalHooks";
-import { imageURL } from "@/api/GlobalData";
+
+import parse from "html-react-parser";
+import getImageUrl from "@/components/utils/getImageUrl";
 
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
-import { useIsMobile } from "@/lib/helpers";
+
+const getLocalizedText = (value, lang = "en", fallback = "") => {
+  if (typeof value === "string" || typeof value === "number") {
+    return String(value);
+  }
+
+  if (!value || typeof value !== "object") {
+    return fallback;
+  }
+
+  const localizedValue = value[lang] ?? value.en ?? value.ar ?? value.tr;
+
+  if (
+    typeof localizedValue === "string" ||
+    typeof localizedValue === "number"
+  ) {
+    return String(localizedValue);
+  }
+
+  return fallback;
+};
+
+const getInitials = (name = "") => {
+  if (typeof name !== "string") {
+    return "";
+  }
+
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0))
+    .join("")
+    .toUpperCase();
+};
 
 export default function FounderSlider({ founders = [], variant = "founders" }) {
   const { i18n, t } = useTranslation();
-  const lang = i18n.language || "en";
+
+  const lang = (i18n.resolvedLanguage || i18n.language || "en").split("-")[0];
+
   const isRtl = lang === "ar";
 
   const items = Array.isArray(founders) ? founders : [];
 
-  if (!items.length) return null;
+  const canNavigate = items.length > 1;
 
-  const getText = (field) =>
-    field?.[lang] || field?.en || field?.ar || field?.tr || "";
+  const sliderKey = String(variant || "founders")
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]/g, "");
+
+  const previousClass = `jadwa-founder-prev-${sliderKey}`;
+
+  const nextClass = `jadwa-founder-next-${sliderKey}`;
+
+  const paginationClass = `jadwa-founder-pagination-${sliderKey}`;
+
+  if (!items.length) {
+    return null;
+  }
 
   return (
-    <div className={`jadwa-founder-slider-wrap ${isRtl ? "rtl" : "ltr"}`}>
+    <div
+      className={`jadwa-founder-slider-wrap jadwa-founder-slider-${sliderKey} ${
+        isRtl ? "rtl" : "ltr"
+      }`}
+      dir={isRtl ? "rtl" : "ltr"}
+    >
       <Swiper
-        key={lang}
+        key={`${sliderKey}-${lang}-${isRtl ? "rtl" : "ltr"}`}
         dir={isRtl ? "rtl" : "ltr"}
         modules={[Navigation, Pagination, Autoplay]}
-        centeredSlides={true}
-        loop={items.length > 1}
+        centeredSlides
+        loop={canNavigate}
         speed={700}
         observer
         observeParents
@@ -40,43 +94,69 @@ export default function FounderSlider({ founders = [], variant = "founders" }) {
             slidesPerView: 1.5,
             spaceBetween: 12,
           },
+
           768: {
             slidesPerView: 1,
             spaceBetween: 20,
           },
         }}
-        autoplay={{
-          delay: 70000,
-          disableOnInteraction: false,
-        }}
-        navigation={{
-          nextEl: ".jadwa-founder-next",
-          prevEl: ".jadwa-founder-prev",
-        }}
-        pagination={{
-          el: ".jadwa-founder-pagination",
-          clickable: true,
-        }}
+        autoplay={
+          canNavigate
+            ? {
+                delay: 70000,
+                disableOnInteraction: false,
+              }
+            : false
+        }
+        navigation={
+          canNavigate
+            ? {
+                nextEl: `.${nextClass}`,
+                prevEl: `.${previousClass}`,
+              }
+            : false
+        }
+        pagination={
+          canNavigate
+            ? {
+                el: `.${paginationClass}`,
+                clickable: true,
+              }
+            : false
+        }
         className="jadwa-founder-swiper"
       >
         {items.map((member, index) => {
-          const name = getText(member?.name);
-          const position = getText(member?.position);
-          const bio = getText(member?.bio);
+          const name = getLocalizedText(member?.name, lang, "Team Member");
+
+          const position = getLocalizedText(member?.position, lang, "");
+
+          const bio = getLocalizedText(member?.bio, lang, "");
+
+          const memberImage = member?.imageUrl
+            ? getImageUrl(member.imageUrl)
+            : "";
 
           return (
-            <SwiperSlide key={member?._id || index}>
+            <SwiperSlide key={member?._id || member?.id || index}>
               <article className="jadwa-founder-slide">
                 <div className="jadwa-founder-pattern" />
 
                 <div className="jadwa-founder-grid">
                   <div className="jadwa-founder-media">
                     <div className="jadwa-founder-image-box">
-                      <img
-                        src={`${imageURL}boardMember/${member.image}`}
-                        alt={name}
-                        className="jadwa-founder-image"
-                      />
+                      {memberImage ? (
+                        <img
+                          src={memberImage}
+                          alt={name}
+                          className="jadwa-founder-image"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="jadwa-founder-image-fallback">
+                          {getInitials(name)}
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -84,6 +164,7 @@ export default function FounderSlider({ founders = [], variant = "founders" }) {
                     <div className="jadwa-founder-top">
                       <div className="jadwa-pill jadwa-founder-pill">
                         <span className="jadwa-pill-dot" />
+
                         <span>
                           {variant === "founders" ? t("founder") : t("team")}
                         </span>
@@ -96,15 +177,13 @@ export default function FounderSlider({ founders = [], variant = "founders" }) {
 
                     <h3 className="jadwa-founder-name">{name}</h3>
 
-                    {position && (
+                    {position ? (
                       <div className="jadwa-founder-position">{position}</div>
-                    )}
+                    ) : null}
 
-                    {bio && (
-                      <div className="jadwa-founder-bio">
-                        <p>{truncateText(bio, 320)}</p>
-                      </div>
-                    )}
+                    {bio ? (
+                      <div className="jadwa-founder-bio">{parse(bio)}</div>
+                    ) : null}
                   </div>
                 </div>
               </article>
@@ -113,25 +192,27 @@ export default function FounderSlider({ founders = [], variant = "founders" }) {
         })}
       </Swiper>
 
-      {items.length > 1 && (
+      {canNavigate ? (
         <div className="jadwa-founder-controls">
           <button
-            className="jadwa-founder-nav jadwa-founder-prev"
+            className={`jadwa-founder-nav jadwa-founder-prev ${previousClass}`}
             type="button"
+            aria-label="Previous member"
           >
-            <i className="fa-solid fa-arrow-left" />
+            <i className="fa-solid fa-arrow-left" aria-hidden="true" />
           </button>
 
-          <div className="jadwa-founder-pagination" />
+          <div className={`jadwa-founder-pagination ${paginationClass}`} />
 
           <button
-            className="jadwa-founder-nav jadwa-founder-next"
+            className={`jadwa-founder-nav jadwa-founder-next ${nextClass}`}
             type="button"
+            aria-label="Next member"
           >
-            <i className="fa-solid fa-arrow-right" />
+            <i className="fa-solid fa-arrow-right" aria-hidden="true" />
           </button>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

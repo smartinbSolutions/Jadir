@@ -1,3 +1,5 @@
+import { Noto_Kufi_Arabic } from "next/font/google";
+
 import AppShell from "@/components/AppShell";
 import "../i18n";
 import "./global.css";
@@ -11,11 +13,20 @@ import "../pages/policies/policies.css";
 import "./website.css";
 import "./utils.css";
 
+const notoKufiArabic = Noto_Kufi_Arabic({
+  subsets: ["arabic", "latin"],
+  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
+  display: "swap",
+  variable: "--font-noto-kufi-arabic",
+});
+
 function MyApp({ Component, pageProps }) {
   return (
-    <AppShell>
-      <Component {...pageProps} />
-    </AppShell>
+    <div className={`${notoKufiArabic.variable} noto-kufi-app`}>
+      <AppShell>
+        <Component {...pageProps} />
+      </AppShell>
+    </div>
   );
 }
 

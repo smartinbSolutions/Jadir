@@ -1,21 +1,53 @@
-import { imageURL } from "@/api/GlobalData";
 import Layout from "@/components/layout/Layout";
+
 import {
   ProjectCards,
   SectionTitle,
   ServiceRequestModal,
 } from "@/components/website/PublicSections";
+
 import {
-  asset,
   getServiceBySlug,
   getWebsiteData,
   localize,
   truncate,
 } from "@/components/website/websiteUtils";
+
+import getImageUrl from "@/components/utils/getImageUrl";
+
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+
+const FALLBACK_SERVICE_IMAGE = "/assets/images/project/project-5.jpg";
+
+const getServiceImage = (service) => {
+  const imagePath =
+    service?.bannerImageUrl ||
+    service?.imageUrl ||
+    service?.bannerImage ||
+    service?.image ||
+    "";
+
+  if (!imagePath || typeof imagePath !== "string") {
+    return FALLBACK_SERVICE_IMAGE;
+  }
+
+  if (/^https?:\/\//i.test(imagePath)) {
+    return imagePath;
+  }
+
+  if (imagePath.startsWith("/")) {
+    return getImageUrl(imagePath);
+  }
+
+  if (imagePath.startsWith("uploads/")) {
+    return getImageUrl(`/${imagePath}`);
+  }
+
+  return getImageUrl(`/uploads/ourServices/${imagePath}`);
+};
 
 const copyMap = {
   en: {
@@ -35,6 +67,7 @@ const copyMap = {
       "Clear feedback from the people and teams who trusted Jadir.",
     openService: "View service",
   },
+
   ar: {
     service: "خدمة",
     request: "طلب هذه الخدمة",
@@ -51,6 +84,7 @@ const copyMap = {
     testimonialsText: "آراء واضحة من الجهات والفرق التي وثقت بجدير.",
     openService: "عرض الخدمة",
   },
+
   tr: {
     service: "Hizmet",
     request: "Bu hizmeti talep et",
@@ -79,6 +113,7 @@ function ListBlock({ title, items = [], index }) {
         <span className="jadir-service-list-count">
           {String(index).padStart(2, "0")}
         </span>
+
         <h3>{title}</h3>
       </div>
 
@@ -116,10 +151,12 @@ function TestimonialsList({ testimonials = [], lang = "en" }) {
               testimonial?.clientName || testimonial?.name,
               lang,
             );
+
             const role = localize(
               testimonial?.clientRole || testimonial?.role,
               lang,
             );
+
             const quote = localize(
               testimonial?.quote ||
                 testimonial?.content ||
@@ -133,10 +170,12 @@ function TestimonialsList({ testimonials = [], lang = "en" }) {
                 key={`service-testimonial-${index}`}
               >
                 <div className="jadir-service-quote">"</div>
+
                 <p>{quote}</p>
 
                 <div className="jadir-service-testimonial-person">
                   <h3>{name}</h3>
+
                   {role ? <span>{role}</span> : null}
                 </div>
               </article>
@@ -155,19 +194,25 @@ export default function ServiceDetailsPage({
 }) {
   const router = useRouter();
   const { i18n, t } = useTranslation();
+
   const lang = i18n.language || "en";
   const isRtl = lang === "ar";
   const copy = copyMap[lang] || copyMap.en;
+
   const [requestOpen, setRequestOpen] = useState(false);
 
   if (!service) return null;
 
   const title = localize(service?.title, lang);
+
   const description = localize(service?.description, lang);
-  const image = `${imageURL}ourServices/${service.bannerImage}`;
+
+  const image = getServiceImage(service);
 
   const features = service?.features?.[lang] || service?.features?.en || [];
+
   const steps = service?.steps?.[lang] || service?.steps?.en || [];
+
   const sectors =
     service?.targetingSectors?.[lang] || service?.targetingSectors?.en || [];
 
@@ -179,14 +224,23 @@ export default function ServiceDetailsPage({
 
   const relatedProjects = projects.filter((project) =>
     (service?.relatedProjects || []).some(
-      (item) => (item?._id || item) === project?._id,
+      (item) => String(item?._id || item) === String(project?._id),
     ),
   );
 
   const listBlocks = [
-    { title: copy.advantages, items: features },
-    { title: copy.stages, items: steps },
-    { title: copy.sectors, items: sectors },
+    {
+      title: copy.advantages,
+      items: features,
+    },
+    {
+      title: copy.stages,
+      items: steps,
+    },
+    {
+      title: copy.sectors,
+      items: sectors,
+    },
   ].filter((item) => item.items?.length);
 
   return (
@@ -201,7 +255,12 @@ export default function ServiceDetailsPage({
               <img
                 className="jadir-service-detail-image"
                 src={image}
-                alt={title}
+                alt={title || "Service"}
+                onError={(event) => {
+                  event.currentTarget.onerror = null;
+
+                  event.currentTarget.src = FALLBACK_SERVICE_IMAGE;
+                }}
               />
             </div>
 
@@ -225,6 +284,7 @@ export default function ServiceDetailsPage({
                 onClick={() => router.push("/contact")}
               >
                 <span>{copy.request}</span>
+
                 <i
                   className={`fa-solid ${
                     isRtl ? "fa-arrow-left" : "fa-arrow-right"
@@ -241,20 +301,20 @@ export default function ServiceDetailsPage({
                   <span />
                   {copy.description}
                 </div>
-
-                {/* <h2>{title}</h2> */}
               </div>
 
               <div className="jadir-service-description-card">
                 <div
                   className="jadir-service-description-richtext"
-                  dangerouslySetInnerHTML={{ __html: description }}
+                  dangerouslySetInnerHTML={{
+                    __html: description,
+                  }}
                 />
               </div>
             </section>
           ) : null}
 
-          {!!listBlocks.length && (
+          {listBlocks.length ? (
             <div className="jadir-service-list-grid">
               {listBlocks.map((block, index) => (
                 <ListBlock
@@ -265,7 +325,7 @@ export default function ServiceDetailsPage({
                 />
               ))}
             </div>
-          )}
+          ) : null}
 
           <div className="jadir-service-detail-section">
             <div className="jadir-service-section-head centered">
@@ -273,6 +333,7 @@ export default function ServiceDetailsPage({
                 <span />
                 {copy.projects}
               </div>
+
               <h2>{copy.relatedProjects}</h2>
             </div>
 
@@ -283,56 +344,70 @@ export default function ServiceDetailsPage({
             />
           </div>
 
-          {!!relatedServices.length && (
+          {relatedServices.length ? (
             <div className="jadir-service-detail-section">
               <div className="jadir-service-section-head centered">
                 <div className="jadir-service-detail-eyebrow">
                   <span />
                   {copy.services}
                 </div>
+
                 <h2>{copy.relatedServices}</h2>
               </div>
 
               <div className="jadir-service-related-grid">
-                {relatedServices.map((item) => (
-                  <div
-                    className="bg-white jadir-service-related-card"
-                    key={item?._id || item?.slug}
-                  >
-                    <div className="jadir-service-related-image">
-                      <img
-                        src={asset(
-                          "ourServices",
-                          item.bannerImage,
-                          "/assets/images/project/project-5.jpg",
-                        )}
-                        alt={localize(item?.title, lang)}
-                      />
-                    </div>
+                {relatedServices.map((item) => {
+                  const itemTitle = localize(item?.title, lang);
 
-                    <div className="jadir-service-related-content">
-                      <h3>{localize(item?.title, lang)}</h3>
-                      <p>{truncate(localize(item?.description, lang), 120)}</p>
+                  const itemImage = getServiceImage(item);
 
-                      <Link
-                        href={`/Services/${item?.slug || item?._id}`}
-                        className="services-redesign-link"
-                      >
-                        <span>{t("learnMore")}</span>
-                        <i
-                          className={`services-redesign-arrow ${
-                            isRtl ? "rtl-arrow" : ""
-                          }`}
+                  const itemHref = `/Services/${item?.slug || item?._id}`;
+
+                  return (
+                    <div
+                      className="bg-white jadir-service-related-card"
+                      key={item?._id || item?.slug}
+                    >
+                      <div className="jadir-service-related-image">
+                        <img
+                          src={itemImage}
+                          alt={itemTitle || "Service"}
+                          onError={(event) => {
+                            event.currentTarget.onerror = null;
+
+                            event.currentTarget.src = FALLBACK_SERVICE_IMAGE;
+                          }}
+                        />
+                      </div>
+
+                      <div className="jadir-service-related-content">
+                        <h3>{itemTitle}</h3>
+
+                        <p>
+                          {truncate(localize(item?.description, lang), 120)}
+                        </p>
+
+                        <Link
+                          href={itemHref}
+                          className="services-redesign-link"
                         >
-                          →
-                        </i>
-                      </Link>
+                          <span>{t("learnMore")}</span>
+
+                          <i
+                            className={`services-redesign-arrow ${
+                              isRtl ? "rtl-arrow" : ""
+                            }`}
+                          >
+                            →
+                          </i>
+                        </Link>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
-          )}
+          ) : null}
         </div>
       </section>
 
@@ -356,7 +431,12 @@ export async function getStaticPaths() {
   return {
     paths: (data.services || [])
       .filter((service) => service?.slug)
-      .map((service) => ({ params: { slug: service.slug } })),
+      .map((service) => ({
+        params: {
+          slug: service.slug,
+        },
+      })),
+
     fallback: "blocking",
   };
 }
@@ -367,24 +447,38 @@ export async function getStaticProps({ params }) {
     getWebsiteData(),
   ]);
 
-  if (!service) return { notFound: true, revalidate: 60 };
+  if (!service) {
+    return {
+      notFound: true,
+      revalidate: 60,
+    };
+  }
 
-  const relatedIds = (service.relatedServices || []).map(
-    (item) => item?._id || item,
+  const relatedIds = (service.relatedServices || []).map((item) =>
+    String(item?._id || item),
   );
+
+  const allServices = Array.isArray(data?.services) ? data.services : [];
 
   return {
     props: {
       service,
-      projects: data.projects || [],
-      relatedServices: (data.services || [])
-        .filter(
-          (item) =>
-            relatedIds.includes(item?._id) ||
-            (!relatedIds.length && item?._id !== service?._id),
-        )
+
+      projects: Array.isArray(data?.projects) ? data.projects : [],
+
+      relatedServices: allServices
+        .filter((item) => {
+          const itemId = String(item?._id || "");
+
+          if (itemId === String(service?._id)) {
+            return false;
+          }
+
+          return relatedIds.length ? relatedIds.includes(itemId) : true;
+        })
         .slice(0, 3),
     },
+
     revalidate: 300,
   };
 }

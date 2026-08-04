@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 const emptyLangState = {
   en: "",
   ar: "",
+  tr: ""
 };
 
 export const usePolicyEditorState = (policy) => {
@@ -18,14 +19,17 @@ export const usePolicyEditorState = (policy) => {
     setTitle({
       en: policy?.title?.en || "",
       ar: policy?.title?.ar || "",
+      tr: policy?.title?.tr || "",
     });
     setSummary({
       en: policy?.summary?.en || "",
       ar: policy?.summary?.ar || "",
+      tr: policy?.summary?.tr || "",
     });
     setContent({
       en: policy?.content?.en || "",
       ar: policy?.content?.ar || "",
+      tr: policy?.content?.tr || "",
     });
     setPolicyType(policy?.policyType || "policy");
     setOrder(policy?.order ?? 0);

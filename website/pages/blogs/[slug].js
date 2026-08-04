@@ -6,45 +6,123 @@ import parse from "html-react-parser";
 import { useTranslation } from "react-i18next";
 import { formatDate } from "@/GlobalHooks/GlobalHooks";
 import { imageURL } from "@/api/GlobalData";
+
+import { getPageBanners, resolvePageBanner } from "@/lib/pageBanners";
 import {
   getAllBlogs,
   getBlogBySlug,
   getRelatedBlogs,
 } from "@/api/getOtherData";
 import ShareArticle from "@/components/elements/ShareArticle";
+import getImageUrl from "@/components/utils/getImageUrl";
 
-const getCategoryLabel = (category, lang) =>
-  category?.name?.[lang] ||
-  category?.name?.en ||
-  category?.title?.[lang] ||
-  category?.title?.en ||
-  "";
+const getLocalizedText = (value, lang = "en", fallback = "") => {
+  if (typeof value === "string" || typeof value === "number") {
+    return String(value);
+  }
 
-const getBlogImage = (blog) =>
-  blog?.photo
-    ? `${imageURL}blogs/${blog.photo}`
-    : "/assets/images/news/news-5.jpg";
+  if (!value || typeof value !== "object") {
+    return fallback;
+  }
 
-export default function BlogDetailsPage({ blog, relatedBlogs = [] }) {
+  const localizedValue = value[lang] ?? value.en ?? value.ar ?? value.tr;
+
+  if (
+    typeof localizedValue === "string" ||
+    typeof localizedValue === "number"
+  ) {
+    return String(localizedValue);
+  }
+
+  return fallback;
+};
+
+const getCategoryLabel = (category, lang) => {
+  return getLocalizedText(category?.name ?? category?.title, lang, "");
+};
+
+const FALLBACK_BLOG_IMAGE = "/assets/images/news/news-5.jpg";
+
+const getBlogImage = (blog, useThumbnail = false) => {
+  const imagePath = useThumbnail
+    ? blog?.thumbnailImageUrl ||
+      blog?.imageUrl ||
+      blog?.thumbnailImage ||
+      blog?.image ||
+      blog?.photo
+    : blog?.imageUrl ||
+      blog?.thumbnailImageUrl ||
+      blog?.image ||
+      blog?.photo ||
+      blog?.thumbnailImage;
+
+  const normalizedPath = Array.isArray(imagePath) ? imagePath[0] : imagePath;
+
+  if (!normalizedPath || typeof normalizedPath !== "string") {
+    return FALLBACK_BLOG_IMAGE;
+  }
+
+  if (/^https?:\/\//i.test(normalizedPath)) {
+    return normalizedPath;
+  }
+
+  if (normalizedPath.startsWith("/")) {
+    return getImageUrl(normalizedPath);
+  }
+
+  if (normalizedPath.startsWith("uploads/")) {
+    return getImageUrl(`/${normalizedPath}`);
+  }
+
+  return getImageUrl(`/uploads/blogs/${normalizedPath}`);
+};
+export default function BlogDetailsPage({
+  blog,
+  relatedBlogs = [],
+  pageBanners = {},
+}) {
   const { i18n, t } = useTranslation();
-  const lang = i18n.language || "en";
+
+  const lang = (i18n.resolvedLanguage || i18n.language || "en").split("-")[0];
+
   const isRtl = lang === "ar";
 
-  if (!blog) return null;
+  if (!blog) {
+    return null;
+  }
 
-  const blogTitle = blog?.title?.[lang] || blog?.title?.en || "";
-  const blogContent = blog?.content?.[lang] || blog?.content?.en || "";
-  const blogExcerpt = blog?.excerpt?.[lang] || blog?.excerpt?.en || "";
+  const blogTitle = getLocalizedText(blog?.title, lang, "");
+
+  const blogContent = getLocalizedText(blog?.content, lang, "");
+
+  const blogExcerpt = getLocalizedText(blog?.excerpt, lang, "");
+
+  const authorName = getLocalizedText(
+    blog?.author?.name,
+    lang,
+    "Jadir Investment",
+  );
+
+  const authorRole = getLocalizedText(blog?.author?.role, lang, "");
+
+  const safeRelatedBlogs = Array.isArray(relatedBlogs) ? relatedBlogs : [];
 
   return (
-    <Layout breadcrumbTitle={t("blog.BlogDetails")}>
-      <section className="jadwa-blog-details-page sec-pad">
+    <Layout
+      breadcrumbTitle={t("blog.BlogDetails")}
+      image={resolvePageBanner("blogs", pageBanners)}
+    >
+      {" "}
+      <section
+        className="jadwa-blog-details-page sec-pad"
+        dir={isRtl ? "rtl" : "ltr"}
+      >
         <div className="auto-container">
           <div className="jadwa-blog-details-hero">
             <div className="jadwa-blog-details-hero-inner">
               {blog?.category ? (
                 <Link
-                  href={`/blogs?category=${blog.category._id}`}
+                  href={`/blogs?category=${blog.category?._id || ""}`}
                   className="jadwa-blog-details-category"
                 >
                   {getCategoryLabel(blog.category, lang)}
@@ -56,15 +134,17 @@ export default function BlogDetailsPage({ blog, relatedBlogs = [] }) {
               <div className="jadwa-blog-details-meta">
                 <span>{formatDate(blog?.createdAt)}</span>
 
-                {(blog?.author?.name || blog?.author?.role?.[lang]) && (
+                {(authorName || authorRole) && (
                   <>
                     <span className="jadwa-blog-details-meta-dot" />
+
                     <span>
-                      {blog?.author?.name || "Jadir Investment"}
-                      {blog?.author?.role?.[lang] ? (
+                      {authorName}
+
+                      {authorRole ? (
                         <em className="jadwa-blog-details-author-role">
                           {" "}
-                          · {blog?.author?.role?.[lang]}
+                          · {authorRole}
                         </em>
                       ) : null}
                     </span>
@@ -75,7 +155,9 @@ export default function BlogDetailsPage({ blog, relatedBlogs = [] }) {
               {blogExcerpt ? (
                 <p
                   className="jadwa-blog-details-excerpt"
-                  dangerouslySetInnerHTML={{ __html: blogExcerpt }}
+                  dangerouslySetInnerHTML={{
+                    __html: blogExcerpt,
+                  }}
                 />
               ) : null}
             </div>
@@ -85,6 +167,10 @@ export default function BlogDetailsPage({ blog, relatedBlogs = [] }) {
                 src={getBlogImage(blog)}
                 className="jadwa-blog-details-image"
                 alt={blogTitle || "Blog"}
+                onError={(event) => {
+                  event.currentTarget.onerror = null;
+                  event.currentTarget.src = FALLBACK_BLOG_IMAGE;
+                }}
               />
             </div>
           </div>
@@ -93,7 +179,7 @@ export default function BlogDetailsPage({ blog, relatedBlogs = [] }) {
             <div className="jadwa-blog-details-main">
               <article className="jadwa-blog-details-article">
                 <div className="jadwa-blog-details-content">
-                  {parse(blogContent)}
+                  {blogContent ? parse(blogContent) : null}
                 </div>
               </article>
             </div>
@@ -107,7 +193,9 @@ export default function BlogDetailsPage({ blog, relatedBlogs = [] }) {
                     </div>
 
                     <div className="jadwa-blog-side-tags">
-                      <Link href={`/blogs?category=${blog.category._id}`}>
+                      <Link
+                        href={`/blogs?category=${blog.category?._id || ""}`}
+                      >
                         {getCategoryLabel(blog.category, lang)}
                       </Link>
                     </div>
@@ -126,35 +214,42 @@ export default function BlogDetailsPage({ blog, relatedBlogs = [] }) {
                   <ShareArticle title={blogTitle} description={blogExcerpt} />
                 </div>
 
-                {relatedBlogs.length ? (
+                {safeRelatedBlogs.length ? (
                   <div className="jadwa-blog-side-card">
                     <div className="jadwa-blog-side-card-title">
                       {t("relatedBlogs")}
                     </div>
 
                     <div className="jadwa-blog-side-list">
-                      {relatedBlogs.map((item) => (
-                        <Link
-                          key={item?._id || item?.slug}
-                          href={`/blogs/${item?.slug || item?._id}`}
-                          className="jadwa-blog-side-post"
-                        >
-                          <div className="jadwa-blog-side-post-image-wrap">
-                            <img
-                              src={getBlogImage(item)}
-                              alt={
-                                item?.title?.[lang] || item?.title?.en || "Blog"
-                              }
-                              className="jadwa-blog-side-post-image"
-                            />
-                          </div>
+                      {safeRelatedBlogs.map((item, index) => {
+                        const itemTitle = getLocalizedText(
+                          item?.title,
+                          lang,
+                          "Blog",
+                        );
 
-                          <div className="jadwa-blog-side-post-content">
-                            <h5>{item?.title?.[lang] || item?.title?.en}</h5>
-                            <span>{formatDate(item?.createdAt)}</span>
-                          </div>
-                        </Link>
-                      ))}
+                        return (
+                          <Link
+                            key={item?._id || item?.slug || index}
+                            href={`/blogs/${item?.slug || item?._id}`}
+                            className="jadwa-blog-side-post"
+                          >
+                            <div className="jadwa-blog-side-post-image-wrap">
+                              <img
+                                src={getBlogImage(item, true)}
+                                alt={itemTitle}
+                                className="jadwa-blog-side-post-image"
+                              />
+                            </div>
+
+                            <div className="jadwa-blog-side-post-content">
+                              <h5>{itemTitle}</h5>
+
+                              <span>{formatDate(item?.createdAt)}</span>
+                            </div>
+                          </Link>
+                        );
+                      })}
                     </div>
                   </div>
                 ) : null}
@@ -162,11 +257,12 @@ export default function BlogDetailsPage({ blog, relatedBlogs = [] }) {
             </aside>
           </div>
 
-          {relatedBlogs.length ? (
+          {safeRelatedBlogs.length ? (
             <div className="jadwa-blog-details-related">
               <div className="jadwa-testimonials-head jadwa-blog-related-head">
                 <div className="jadwa-pill">
                   <span className="jadwa-pill-dot" />
+
                   <span>
                     {t("blog.RelatedBlogs") === "blog.RelatedBlogs"
                       ? "More From The Blog"
@@ -182,63 +278,75 @@ export default function BlogDetailsPage({ blog, relatedBlogs = [] }) {
               </div>
 
               <div className="row clearfix">
-                {relatedBlogs.map((item) => (
-                  <div
-                    key={item?._id || item?.slug}
-                    className="col-lg-4 col-md-6 col-sm-12 mb-4"
-                  >
-                    <article className="jadwa-blog-card-v2">
-                      <Link
-                        href={`/blogs/${item?.slug || item?._id}`}
-                        className="jadwa-blog-card-v2-image-link"
-                      >
-                        <img
-                          src={getBlogImage(item)}
-                          alt={item?.title?.[lang] || item?.title?.en || "Blog"}
-                          className="jadwa-blog-card-v2-image"
-                        />
-                      </Link>
+                {safeRelatedBlogs.map((item, index) => {
+                  const itemTitle = getLocalizedText(item?.title, lang, "Blog");
 
-                      <div className="jadwa-blog-card-v2-content">
-                        <div className="jadwa-blog-card-v2-top">
-                          {item?.category ? (
-                            <span className="jadwa-blog-card-v2-category">
-                              {getCategoryLabel(item.category, lang)}
+                  const itemAuthorName = getLocalizedText(
+                    item?.author?.name,
+                    lang,
+                    "Jadir Investment",
+                  );
+
+                  return (
+                    <div
+                      key={item?._id || item?.slug || index}
+                      className="col-lg-4 col-md-6 col-sm-12 mb-4"
+                    >
+                      <article className="jadwa-blog-card-v2">
+                        <Link
+                          href={`/blogs/${item?.slug || item?._id}`}
+                          className="jadwa-blog-card-v2-image-link"
+                        >
+                          <img
+                            src={getBlogImage(item)}
+                            alt={itemTitle}
+                            className="jadwa-blog-card-v2-image"
+                          />
+                        </Link>
+
+                        <div className="jadwa-blog-card-v2-content">
+                          <div className="jadwa-blog-card-v2-top">
+                            {item?.category ? (
+                              <span className="jadwa-blog-card-v2-category">
+                                {getCategoryLabel(item.category, lang)}
+                              </span>
+                            ) : null}
+
+                            <span className="jadwa-blog-card-v2-date">
+                              {formatDate(item?.createdAt)}
                             </span>
-                          ) : null}
+                          </div>
 
-                          <span className="jadwa-blog-card-v2-date">
-                            {formatDate(item?.createdAt)}
-                          </span>
+                          <h3 className="jadwa-blog-card-v2-title">
+                            <Link href={`/blogs/${item?.slug || item?._id}`}>
+                              {itemTitle}
+                            </Link>
+                          </h3>
+
+                          <div className="jadwa-blog-card-v2-footer">
+                            <span className="jadwa-blog-card-v2-author">
+                              {itemAuthorName}
+                            </span>
+
+                            <Link
+                              href={`/blogs/${item?.slug || item?._id}`}
+                              className="jadwa-blog-card-v2-link"
+                            >
+                              <span>{t("ExploreMore")}</span>
+
+                              <i
+                                className={`fa-solid ${
+                                  isRtl ? "fa-arrow-left" : "fa-arrow-right"
+                                }`}
+                                aria-hidden="true"
+                              />
+                            </Link>
+                          </div>
                         </div>
-
-                        <h3 className="jadwa-blog-card-v2-title">
-                          <Link href={`/blogs/${item?.slug || item?._id}`}>
-                            {item?.title?.[lang] || item?.title?.en}
-                          </Link>
-                        </h3>
-
-                        <div className="jadwa-blog-card-v2-footer">
-                          <span className="jadwa-blog-card-v2-author">
-                            {item?.author?.name || "Jadir Investment"}
-                          </span>
-
-                          <Link
-                            href={`/blogs/${item?.slug || item?._id}`}
-                            className="jadwa-blog-card-v2-link"
-                          >
-                            <span>{t("ExploreMore")}</span>
-                            <i
-                              className={`fa-solid ${
-                                isRtl ? "fa-arrow-left" : "fa-arrow-right"
-                              }`}
-                            />
-                          </Link>
-                        </div>
-                      </div>
-                    </article>
-                  </div>
-                ))}
+                      </article>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           ) : null}
@@ -250,18 +358,26 @@ export default function BlogDetailsPage({ blog, relatedBlogs = [] }) {
 
 export async function getStaticPaths() {
   try {
-    const payload = await getAllBlogs({ page: 1, limit: 100 });
+    const payload = await getAllBlogs({
+      page: 1,
+      limit: 100,
+    });
+
     const blogs = Array.isArray(payload?.data) ? payload.data : [];
 
     return {
       paths: blogs
         .filter((blog) => blog?.slug)
         .map((blog) => ({
-          params: { slug: blog.slug },
+          params: {
+            slug: blog.slug,
+          },
         })),
       fallback: "blocking",
     };
   } catch (error) {
+    console.error("Failed to generate blog paths:", error);
+
     return {
       paths: [],
       fallback: "blocking",
@@ -270,25 +386,41 @@ export async function getStaticPaths() {
 }
 
 export async function getStaticProps({ params }) {
-  const blog = await getBlogBySlug(params?.slug);
+  try {
+    const [blog, pageBanners] = await Promise.all([
+      getBlogBySlug(params?.slug),
+      getPageBanners(),
+    ]);
 
-  if (!blog?._id && !blog?.slug) {
+    if (!blog?._id && !blog?.slug) {
+      return {
+        notFound: true,
+        revalidate: 60,
+      };
+    }
+
+    const relatedBlogs = await getRelatedBlogs({
+      blog,
+      limit: 4,
+    });
+
+    return {
+      props: {
+        blog,
+
+        relatedBlogs: Array.isArray(relatedBlogs) ? relatedBlogs : [],
+
+        pageBanners: pageBanners || {},
+      },
+
+      revalidate: 300,
+    };
+  } catch (error) {
+    console.error("Failed to fetch blog details:", error);
+
     return {
       notFound: true,
       revalidate: 60,
     };
   }
-
-  const relatedBlogs = await getRelatedBlogs({
-    blog,
-    limit: 4,
-  });
-
-  return {
-    props: {
-      blog,
-      relatedBlogs,
-    },
-    revalidate: 300,
-  };
 }

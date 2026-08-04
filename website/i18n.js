@@ -12,7 +12,15 @@ const resources = {
 
 i18n.use(initReactI18next).init({
   resources,
-  fallbackLng: "ar",
+
+  // اللغة الافتراضية للموقع
+  lng: "en",
+
+  // عند فقدان ترجمة، استخدم الإنجليزية
+  fallbackLng: "en",
+
+  supportedLngs: ["en", "ar", "tr"],
+
   interpolation: {
     escapeValue: false,
   },

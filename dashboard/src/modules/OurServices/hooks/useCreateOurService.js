@@ -3,6 +3,7 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { useOurServices } from "../../hooks/useOurServices";
 import { useProjects } from "../../hooks/useProjects";
+import { useEffect } from "react";
 
 const emptyLangState = {
   en: "",
@@ -93,6 +94,10 @@ const useCreateOurService = () => {
   const onImageChange = (selectedAvatar) => {
     const file = selectedAvatar?.[0]?.file;
 
+    if (imagePreview?.startsWith("blob:")) {
+      URL.revokeObjectURL(imagePreview);
+    }
+
     if (file) {
       setImageFile(file);
       setImagePreview(URL.createObjectURL(file));
@@ -101,6 +106,14 @@ const useCreateOurService = () => {
       setImagePreview(null);
     }
   };
+
+  useEffect(() => {
+    return () => {
+      if (imagePreview?.startsWith("blob:")) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
 
   const handleSave = async () => {
     try {

@@ -6,6 +6,7 @@ import { usePartners } from "../../hooks/usePartners";
 const emptyLangState = {
   en: "",
   ar: "",
+  tr: "",
 };
 
 const useCreatePartner = () => {

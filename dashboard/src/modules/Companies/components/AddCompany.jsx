@@ -33,7 +33,7 @@ const AddCompany = () => {
         />
       ),
     },
-    ...["en", "ar"].map((lang) => ({
+    ...["en", "ar" , "tr"].map((lang) => ({
       key: `company_${lang}`,
       label: `Company ${lang.toUpperCase()}`,
       icon: "ki-outline ki-clipboard",

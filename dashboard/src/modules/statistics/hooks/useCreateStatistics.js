@@ -6,6 +6,7 @@ import { useStatistics } from "../../hooks/useStatistics";
 const emptyLangState = {
   en: "",
   ar: "",
+  tr: "",
 };
 
 const useCreateStatistic = () => {

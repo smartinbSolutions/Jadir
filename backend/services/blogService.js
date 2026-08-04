@@ -8,10 +8,40 @@ const sharp = require("sharp");
 const { default: slugify } = require("slugify");
 const categoryModel = require("../models/categoryModel");
 const safeParseJSON = require("../utils/safeParseJson");
+const fs = require("fs");
+const path = require("path");
+
+const BLOG_UPLOAD_DIRECTORY = path.resolve(process.cwd(), "uploads", "blogs");
+
+const deleteBlogImageFile = async (filename) => {
+  if (!filename || typeof filename !== "string") return;
+
+  // يمنع الخروج من مجلد blogs إذا وصل مسار غير آمن
+  const safeFilename = path.basename(filename);
+  const filePath = path.join(BLOG_UPLOAD_DIRECTORY, safeFilename);
+
+  try {
+    await fs.promises.unlink(filePath);
+  } catch (error) {
+    // عدم وجود الملف لا يعتبر خطأ
+    if (error.code !== "ENOENT") {
+      console.error(`Failed to delete blog image: ${filePath}`, error);
+    }
+  }
+};
 
 const buildSlug = (name = {}) => {
-  const base = name?.en || name?.ar || "";
-  return slugify(base, { lower: true, strict: true, trim: true });
+  const base = name?.en || name?.ar || name?.tr || "";
+
+  return slugify(base, {
+    lower: true,
+    strict: true,
+    trim: true,
+  });
+};
+
+const escapeRegex = (value = "") => {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 };
 
 exports.uploadBlogImages = uploadMixOfImages([
@@ -20,7 +50,19 @@ exports.uploadBlogImages = uploadMixOfImages([
 ]);
 
 exports.resizeBlogImages = asyncHandler(async (req, res, next) => {
-  if (req.files?.image?.[0]) {
+  const hasMainImage = Boolean(req.files?.image?.[0]);
+
+  const hasThumbnailImage = Boolean(req.files?.thumbnailImage?.[0]);
+
+  if (!hasMainImage && !hasThumbnailImage) {
+    return next();
+  }
+
+  fs.mkdirSync("uploads/blogs", {
+    recursive: true,
+  });
+
+  if (hasMainImage) {
     const imageFilename = `blog-${uuidv4()}-${Date.now()}.webp`;
 
     await sharp(req.files.image[0].buffer)
@@ -31,7 +73,7 @@ exports.resizeBlogImages = asyncHandler(async (req, res, next) => {
     req.body.image = imageFilename;
   }
 
-  if (req.files?.thumbnailImage?.[0]) {
+  if (hasThumbnailImage) {
     const thumbnailFilename = `blog-thumb-${uuidv4()}-${Date.now()}.webp`;
 
     await sharp(req.files.thumbnailImage[0].buffer)
@@ -58,14 +100,31 @@ exports.getBlogs = asyncHandler(async (req, res) => {
   const query = {};
 
   if (keyword?.trim()) {
-    const keywordRegex = { $regex: keyword.trim(), $options: "i" };
+    const keywordRegex = {
+      $regex: escapeRegex(keyword.trim()),
+      $options: "i",
+    };
 
     query.$or = [
-      { "tags.ar": keywordRegex },
-      { "tags.en": keywordRegex },
-      { "title.ar": keywordRegex },
       { "title.en": keywordRegex },
-      { "author.name": keywordRegex },
+      { "title.ar": keywordRegex },
+      { "title.tr": keywordRegex },
+
+      { "excerpt.en": keywordRegex },
+      { "excerpt.ar": keywordRegex },
+      { "excerpt.tr": keywordRegex },
+
+      { "tags.en": keywordRegex },
+      { "tags.ar": keywordRegex },
+      { "tags.tr": keywordRegex },
+
+      { "author.name.en": keywordRegex },
+      { "author.name.ar": keywordRegex },
+      { "author.name.tr": keywordRegex },
+
+      { "author.role.en": keywordRegex },
+      { "author.role.ar": keywordRegex },
+      { "author.role.tr": keywordRegex },
     ];
   }
 
@@ -85,6 +144,7 @@ exports.getBlogs = asyncHandler(async (req, res) => {
     categoryQuery.$or.push(
       { "name.ar": { $regex: category, $options: "i" } },
       { "name.en": { $regex: category, $options: "i" } },
+      { "name.tr": { $regex: category, $options: "i" } },
       { slug: { $regex: `^${category}$`, $options: "i" } },
     );
 
@@ -141,14 +201,31 @@ exports.getPublicBlogs = asyncHandler(async (req, res) => {
   const query = { published: true };
 
   if (keyword?.trim()) {
-    const keywordRegex = { $regex: keyword.trim(), $options: "i" };
+    const keywordRegex = {
+      $regex: escapeRegex(keyword.trim()),
+      $options: "i",
+    };
 
     query.$or = [
-      { "tags.ar": keywordRegex },
-      { "tags.en": keywordRegex },
-      { "title.ar": keywordRegex },
       { "title.en": keywordRegex },
-      { "author.name": keywordRegex },
+      { "title.ar": keywordRegex },
+      { "title.tr": keywordRegex },
+
+      { "excerpt.en": keywordRegex },
+      { "excerpt.ar": keywordRegex },
+      { "excerpt.tr": keywordRegex },
+
+      { "tags.en": keywordRegex },
+      { "tags.ar": keywordRegex },
+      { "tags.tr": keywordRegex },
+
+      { "author.name.en": keywordRegex },
+      { "author.name.ar": keywordRegex },
+      { "author.name.tr": keywordRegex },
+
+      { "author.role.en": keywordRegex },
+      { "author.role.ar": keywordRegex },
+      { "author.role.tr": keywordRegex },
     ];
   }
 
@@ -233,7 +310,9 @@ exports.getOneBlog = asyncHandler(async (req, res, next) => {
   const blog = await blogModel.findById(req.params.id).populate("category");
 
   if (!blog) {
-    return next(new ApiError(`No Blog found for this id: ${req.params.id}`, 404));
+    return next(
+      new ApiError(`No Blog found for this id: ${req.params.id}`, 404),
+    );
   }
 
   res.status(200).json({
@@ -285,6 +364,25 @@ exports.getBlogBySlug = asyncHandler(async (req, res, next) => {
 });
 
 exports.updateBlog = asyncHandler(async (req, res, next) => {
+  const existingBlog = await blogModel.findById(req.params.id);
+
+  if (!existingBlog) {
+    return next(
+      new ApiError(`No Blog found for this id: ${req.params.id}`, 404),
+    );
+  }
+
+  const removeImage =
+    req.body.removeImage === true || req.body.removeImage === "true";
+
+  const removeThumbnailImage =
+    req.body.removeThumbnailImage === true ||
+    req.body.removeThumbnailImage === "true";
+
+  // هذه حقول تحكم وليست جزءاً من Blog model
+  delete req.body.removeImage;
+  delete req.body.removeThumbnailImage;
+
   if (req.body.title !== undefined) {
     req.body.title = safeParseJSON(req.body.title, "title");
   }
@@ -306,21 +404,51 @@ exports.updateBlog = asyncHandler(async (req, res, next) => {
   }
 
   if (req.body.relatedPosts !== undefined) {
-    req.body.relatedPosts = safeParseJSON(req.body.relatedPosts, "relatedPosts");
+    req.body.relatedPosts = safeParseJSON(
+      req.body.relatedPosts,
+      "relatedPosts",
+    );
   }
 
   if (req.body.title) {
     req.body.slug = buildSlug(req.body.title);
   }
 
-  const updatedBlog = await blogModel.findByIdAndUpdate(req.params.id, req.body, {
-    new: true,
-    runValidators: true,
-  });
-
-  if (!updatedBlog) {
-    return next(new ApiError(`No Blog found for this id: ${req.params.id}`, 404));
+  /*
+   * إذا وُجدت صورة جديدة داخل req.body.image فإنها تأخذ الأولوية.
+   * إذا لم توجد صورة جديدة وكان removeImage=true يتم تفريغ الحقل.
+   */
+  if (removeImage && !req.body.image) {
+    req.body.image = "";
   }
+
+  if (removeThumbnailImage && !req.body.thumbnailImage) {
+    req.body.thumbnailImage = "";
+  }
+
+  const updatedBlog = await blogModel.findByIdAndUpdate(
+    req.params.id,
+    req.body,
+    {
+      new: true,
+      runValidators: true,
+    },
+  );
+
+  const filesToDelete = [];
+
+  if (existingBlog.image && existingBlog.image !== updatedBlog.image) {
+    filesToDelete.push(existingBlog.image);
+  }
+
+  if (
+    existingBlog.thumbnailImage &&
+    existingBlog.thumbnailImage !== updatedBlog.thumbnailImage
+  ) {
+    filesToDelete.push(existingBlog.thumbnailImage);
+  }
+
+  await Promise.all(filesToDelete.map(deleteBlogImageFile));
 
   res.status(200).json({
     status: true,
@@ -330,11 +458,18 @@ exports.updateBlog = asyncHandler(async (req, res, next) => {
 });
 
 exports.deleteBlog = asyncHandler(async (req, res, next) => {
-  const blog = await blogModel.findByIdAndDelete(req.params.id);
+  const deletedBlog = await blogModel.findByIdAndDelete(req.params.id);
 
-  if (!blog) {
-    return next(new ApiError(`No Blog found for this id: ${req.params.id}`, 404));
+  if (!deletedBlog) {
+    return next(
+      new ApiError(`No Blog found for this id: ${req.params.id}`, 404),
+    );
   }
+
+  await Promise.all([
+    deleteBlogImageFile(deletedBlog.image),
+    deleteBlogImageFile(deletedBlog.thumbnailImage),
+  ]);
 
   res.status(200).json({
     status: true,
@@ -346,7 +481,9 @@ exports.getBlogsByCategory = asyncHandler(async (req, res, next) => {
   const category = await categoryModel.findOne({ slug: req.params.slug });
 
   if (!category) {
-    return next(new ApiError(`No category found with slug: ${req.params.slug}`, 404));
+    return next(
+      new ApiError(`No category found with slug: ${req.params.slug}`, 404),
+    );
   }
 
   const blogs = await blogModel

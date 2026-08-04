@@ -12,6 +12,7 @@ exports.getStatistics = asyncHandler(async (req, res) => {
     query.$or = [
       { "title.ar": { $regex: keyword, $options: "i" } },
       { "title.en": { $regex: keyword, $options: "i" } },
+      { "title.tr": { $regex: keyword, $options: "i" } },
     ];
   }
 

@@ -17,7 +17,7 @@ const AddCategoryModal = ({ isOpen, onClose }) => {
         </div>
 
         <div className="modal-body mt-4">
-          {["en", "ar"].map((lang) => (
+          {["en", "ar" , "tr"].map((lang) => (
             <div className="input-group mb-3" key={lang}>
               <span className="btn btn-input w-[33%]">
                 Name ({lang.toUpperCase()})

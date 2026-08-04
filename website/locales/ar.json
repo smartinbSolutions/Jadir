@@ -19,7 +19,7 @@
     "whoWeAre": "من نحن"
   },
   "blog": {
-    "Blogs": "المدونة",
+    "Blogs": "الاخبار",
     "BlogDetails": "تفاصيل المقالة"
   },
   "services": {
@@ -37,7 +37,7 @@
     "subtitle": "فرص متنوعة عبر مختلف القطاعات"
   },
   "newsRoom": {
-    "title": "مقالات المدونة",
+    "title": "مقالات الاخبار",
     "subtitle": "آخر الاخبار"
   },
   "companies": {
@@ -253,6 +253,7 @@
   "support": "الدعم",
   "serviceRequest": "طلب الخدمة",
   "complaint": "شكوى",
+  "enterYourEmail": "أدخل بريدك الإلكتروني",
   "selectService": "اختر خدمة",
   "companyBranches": "افرع الشركة",
   "openMainBranch": "افتح الفرع الرئيسي",
@@ -269,10 +270,10 @@
   "shareArticleText": "أرسلها إلى شخص قد يجدها مفيدة",
   "copyLink": "نسخ الرابط",
   "copied": "تم النسخ",
-  "digitalFinancialSolutions": "حلول مالية رقمية",
+  "digitalFinancialSolutions": "شريكك الاستشاري  نحو نمو مستدام",
   "navAbout": "من نحن",
   "navCareer": "فرص العمل",
-  "navContact": "تواصل",
+  "navContact": "تواصل معنا",
   "quickLinks": "روابط سريعة",
   "policies": "السياسات",
   "privacyTerms": "الخصوصية والشروط",
@@ -309,7 +310,7 @@
       "all": "الكل",
       "services": "الخدمات",
       "projects": "المشاريع",
-      "blogs": "المدونة",
+      "blogs": "الاخبار",
       "pages": "الصفحات",
       "team": "الفريق",
       "careers": "فرص العمل"

@@ -1,14 +1,24 @@
 import Layout from "@/components/layout/Layout";
 import Link from "next/link";
 import {
-  asset,
   getProjectBySlug,
   getWebsiteData,
   localize,
   truncate,
 } from "@/components/website/websiteUtils";
+import getImageUrl from "@/components/utils/getImageUrl";
 import { useTranslation } from "react-i18next";
 import parse from "html-react-parser";
+
+const FALLBACK_PROJECT_IMAGE = "/assets/images/project/project-5.jpg";
+
+const getProjectImage = (project) => {
+  const path =
+    project?.imageUrl ||
+    (project?.image ? `/uploads/projects/${project.image}` : "");
+
+  return path ? getImageUrl(path) : FALLBACK_PROJECT_IMAGE;
+};
 
 const blockLabels = {
   en: {
@@ -45,9 +55,12 @@ function ProjectBlock({ title, text, index }) {
 
       <div className="jadir-project-detail-block-content">
         <h3>{title}</h3>
+
         <div
           className="jadir-project-detail-richtext"
-          dangerouslySetInnerHTML={{ __html: text }}
+          dangerouslySetInnerHTML={{
+            __html: text,
+          }}
         />
       </div>
     </article>
@@ -56,6 +69,7 @@ function ProjectBlock({ title, text, index }) {
 
 export default function ProjectDetailsPage({ project }) {
   const { i18n } = useTranslation();
+
   const lang = i18n.language || "en";
   const isRtl = lang === "ar";
   const copy = blockLabels[lang] || blockLabels.en;
@@ -64,11 +78,7 @@ export default function ProjectDetailsPage({ project }) {
 
   const title = localize(project?.title, lang);
   const brief = localize(project?.brief, lang);
-  const image = asset(
-    "projects",
-    project?.image,
-    "/assets/images/project/project-5.jpg",
-  );
+  const image = getProjectImage(project);
 
   const blocks = [
     {
@@ -97,7 +107,11 @@ export default function ProjectDetailsPage({ project }) {
               <img
                 className="jadir-project-detail-image"
                 src={image}
-                alt={title}
+                alt={title || "Project"}
+                onError={(event) => {
+                  event.currentTarget.onerror = null;
+                  event.currentTarget.src = FALLBACK_PROJECT_IMAGE;
+                }}
               />
             </div>
 
@@ -109,14 +123,15 @@ export default function ProjectDetailsPage({ project }) {
 
               <h1>{title}</h1>
 
-              {brief && (
+              {brief ? (
                 <div className="jadir-project-detail-brief">
                   {parse(truncate(brief, 300))}
                 </div>
-              )}
+              ) : null}
 
               <Link href="/projects" className="jadir-project-detail-back">
                 <span>{copy.back}</span>
+
                 <i
                   className={`fa-solid ${
                     isRtl ? "fa-arrow-left" : "fa-arrow-right"
@@ -126,7 +141,7 @@ export default function ProjectDetailsPage({ project }) {
             </div>
           </div>
 
-          {!!blocks.length && (
+          {blocks.length > 0 ? (
             <div className="jadir-project-detail-content">
               {blocks.map((block, index) => (
                 <ProjectBlock
@@ -137,7 +152,7 @@ export default function ProjectDetailsPage({ project }) {
                 />
               ))}
             </div>
-          )}
+          ) : null}
         </div>
       </section>
     </Layout>
@@ -147,10 +162,16 @@ export default function ProjectDetailsPage({ project }) {
 export async function getStaticPaths() {
   const data = await getWebsiteData();
 
+  const projects = Array.isArray(data?.projects) ? data.projects : [];
+
   return {
-    paths: (data.projects || [])
+    paths: projects
       .filter((project) => project?.slug)
-      .map((project) => ({ params: { slug: project.slug } })),
+      .map((project) => ({
+        params: {
+          slug: project.slug,
+        },
+      })),
     fallback: "blocking",
   };
 }
@@ -158,7 +179,17 @@ export async function getStaticPaths() {
 export async function getStaticProps({ params }) {
   const project = await getProjectBySlug(params?.slug);
 
-  if (!project) return { notFound: true, revalidate: 60 };
+  if (!project) {
+    return {
+      notFound: true,
+      revalidate: 60,
+    };
+  }
 
-  return { props: { project }, revalidate: 300 };
+  return {
+    props: {
+      project,
+    },
+    revalidate: 300,
+  };
 }
