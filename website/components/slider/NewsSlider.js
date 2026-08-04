@@ -236,7 +236,7 @@ export default function NewsSlider({ news = [] }) {
                       </span>
 
                       <span className="jadwa-blog-date">
-                        {formatDate(blog?.createdAt)}
+                        formatDate(blog?.publishedAt || blog?.createdAt){" "}
                       </span>
                     </div>
 
@@ -293,7 +293,7 @@ export default function NewsSlider({ news = [] }) {
                     </span>
 
                     <span className="jadwa-blog-date">
-                      {formatDate(blog?.createdAt)}
+                      {formatDate(blog?.publishedAt || blog?.createdAt)}{" "}
                     </span>
                   </div>
 

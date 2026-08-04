@@ -918,7 +918,7 @@ export function BlogDetails({ blog, related = [] }) {
           <h1>{title}</h1>
           <div className="site-detail-meta">
             <span>{localize(blog?.author?.name, lang) || "Jadir"}</span>{" "}
-            <span>{formatDate(blog?.createdAt)}</span>
+            <span> {formatDate(blog?.publishedAt || blog?.createdAt)} </span>
           </div>
           <article className="site-richtext">{parse(content || "")}</article>
         </main>

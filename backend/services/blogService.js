@@ -1,29 +1,54 @@
 const asyncHandler = require("express-async-handler");
-const ApiError = require("../utils/apiError");
-const blogModel = require("../models/blogModel");
 const mongoose = require("mongoose");
-const { uploadMixOfImages } = require("../middlewares/uploadingImage");
 const { v4: uuidv4 } = require("uuid");
 const sharp = require("sharp");
 const { default: slugify } = require("slugify");
-const categoryModel = require("../models/categoryModel");
-const safeParseJSON = require("../utils/safeParseJson");
 const fs = require("fs");
 const path = require("path");
 
+const ApiError = require("../utils/apiError");
+const blogModel = require("../models/blogModel");
+const categoryModel = require("../models/categoryModel");
+const { uploadMixOfImages } = require("../middlewares/uploadingImage");
+const safeParseJSON = require("../utils/safeParseJson");
+
 const BLOG_UPLOAD_DIRECTORY = path.resolve(process.cwd(), "uploads", "blogs");
 
-const deleteBlogImageFile = async (filename) => {
-  if (!filename || typeof filename !== "string") return;
+/*
+ * تحويل published القادم من FormData.
+ *
+ * FormData يرسل Boolean كنص:
+ * "true" أو "false"
+ */
+const parseBoolean = (value, fallback = false) => {
+  if (typeof value === "boolean") {
+    return value;
+  }
 
-  // يمنع الخروج من مجلد blogs إذا وصل مسار غير آمن
+  if (typeof value === "string") {
+    const normalizedValue = value.trim().toLowerCase();
+
+    if (normalizedValue === "true") return true;
+    if (normalizedValue === "false") return false;
+  }
+
+  return fallback;
+};
+
+const deleteBlogImageFile = async (filename) => {
+  if (!filename || typeof filename !== "string") {
+    return;
+  }
+
+  // يمنع محاولة الوصول إلى ملف خارج uploads/blogs
   const safeFilename = path.basename(filename);
+
   const filePath = path.join(BLOG_UPLOAD_DIRECTORY, safeFilename);
 
   try {
     await fs.promises.unlink(filePath);
   } catch (error) {
-    // عدم وجود الملف لا يعتبر خطأ
+    // عدم وجود الملف ليس خطأ مؤثرًا
     if (error.code !== "ENOENT") {
       console.error(`Failed to delete blog image: ${filePath}`, error);
     }
@@ -44,9 +69,21 @@ const escapeRegex = (value = "") => {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 };
 
+/*
+|--------------------------------------------------------------------------
+| Upload Images
+|--------------------------------------------------------------------------
+*/
+
 exports.uploadBlogImages = uploadMixOfImages([
-  { name: "image", maxCount: 1 },
-  { name: "thumbnailImage", maxCount: 1 },
+  {
+    name: "image",
+    maxCount: 1,
+  },
+  {
+    name: "thumbnailImage",
+    maxCount: 1,
+  },
 ]);
 
 exports.resizeBlogImages = asyncHandler(async (req, res, next) => {
@@ -58,17 +95,21 @@ exports.resizeBlogImages = asyncHandler(async (req, res, next) => {
     return next();
   }
 
-  fs.mkdirSync("uploads/blogs", {
+  fs.mkdirSync(BLOG_UPLOAD_DIRECTORY, {
     recursive: true,
   });
 
   if (hasMainImage) {
     const imageFilename = `blog-${uuidv4()}-${Date.now()}.webp`;
 
+    const imagePath = path.join(BLOG_UPLOAD_DIRECTORY, imageFilename);
+
     await sharp(req.files.image[0].buffer)
       .toFormat("webp")
-      .webp({ quality: 70 })
-      .toFile(`uploads/blogs/${imageFilename}`);
+      .webp({
+        quality: 70,
+      })
+      .toFile(imagePath);
 
     req.body.image = imageFilename;
   }
@@ -76,16 +117,26 @@ exports.resizeBlogImages = asyncHandler(async (req, res, next) => {
   if (hasThumbnailImage) {
     const thumbnailFilename = `blog-thumb-${uuidv4()}-${Date.now()}.webp`;
 
+    const thumbnailPath = path.join(BLOG_UPLOAD_DIRECTORY, thumbnailFilename);
+
     await sharp(req.files.thumbnailImage[0].buffer)
       .toFormat("webp")
-      .webp({ quality: 70 })
-      .toFile(`uploads/blogs/${thumbnailFilename}`);
+      .webp({
+        quality: 70,
+      })
+      .toFile(thumbnailPath);
 
     req.body.thumbnailImage = thumbnailFilename;
   }
 
   next();
 });
+
+/*
+|--------------------------------------------------------------------------
+| Get Blogs - Dashboard
+|--------------------------------------------------------------------------
+*/
 
 exports.getBlogs = asyncHandler(async (req, res) => {
   const {
@@ -135,17 +186,41 @@ exports.getBlogs = asyncHandler(async (req, res) => {
   }
 
   if (category) {
-    const categoryQuery = { $or: [] };
+    const categoryQuery = {
+      $or: [],
+    };
 
     if (mongoose.Types.ObjectId.isValid(category)) {
-      categoryQuery.$or.push({ _id: category });
+      categoryQuery.$or.push({
+        _id: category,
+      });
     }
 
     categoryQuery.$or.push(
-      { "name.ar": { $regex: category, $options: "i" } },
-      { "name.en": { $regex: category, $options: "i" } },
-      { "name.tr": { $regex: category, $options: "i" } },
-      { slug: { $regex: `^${category}$`, $options: "i" } },
+      {
+        "name.ar": {
+          $regex: escapeRegex(category),
+          $options: "i",
+        },
+      },
+      {
+        "name.en": {
+          $regex: escapeRegex(category),
+          $options: "i",
+        },
+      },
+      {
+        "name.tr": {
+          $regex: escapeRegex(category),
+          $options: "i",
+        },
+      },
+      {
+        slug: {
+          $regex: `^${escapeRegex(category)}$`,
+          $options: "i",
+        },
+      },
     );
 
     const foundCategory = await categoryModel.findOne(categoryQuery);
@@ -167,8 +242,10 @@ exports.getBlogs = asyncHandler(async (req, res) => {
     query.category = foundCategory._id;
   }
 
-  const pageNum = parseInt(page, 10);
-  const limitNum = parseInt(limit, 10);
+  const pageNum = Math.max(parseInt(page, 10) || 1, 1);
+
+  const limitNum = Math.max(parseInt(limit, 10) || 10, 1);
+
   const skip = (pageNum - 1) * limitNum;
 
   const [blogs, total] = await Promise.all([
@@ -178,6 +255,7 @@ exports.getBlogs = asyncHandler(async (req, res) => {
       .skip(skip)
       .limit(limitNum)
       .populate("category"),
+
     blogModel.countDocuments(query),
   ]);
 
@@ -195,10 +273,18 @@ exports.getBlogs = asyncHandler(async (req, res) => {
   });
 });
 
+/*
+|--------------------------------------------------------------------------
+| Get Published Blogs - Website
+|--------------------------------------------------------------------------
+*/
+
 exports.getPublicBlogs = asyncHandler(async (req, res) => {
   const { keyword, page = 1, limit = 10, category } = req.query;
 
-  const query = { published: true };
+  const query = {
+    published: true,
+  };
 
   if (keyword?.trim()) {
     const keywordRegex = {
@@ -230,16 +316,41 @@ exports.getPublicBlogs = asyncHandler(async (req, res) => {
   }
 
   if (category) {
-    const categoryQuery = { $or: [] };
+    const categoryQuery = {
+      $or: [],
+    };
 
     if (mongoose.Types.ObjectId.isValid(category)) {
-      categoryQuery.$or.push({ _id: category });
+      categoryQuery.$or.push({
+        _id: category,
+      });
     }
 
     categoryQuery.$or.push(
-      { "name.ar": { $regex: category, $options: "i" } },
-      { "name.en": { $regex: category, $options: "i" } },
-      { slug: { $regex: `^${category}$`, $options: "i" } },
+      {
+        "name.ar": {
+          $regex: escapeRegex(category),
+          $options: "i",
+        },
+      },
+      {
+        "name.en": {
+          $regex: escapeRegex(category),
+          $options: "i",
+        },
+      },
+      {
+        "name.tr": {
+          $regex: escapeRegex(category),
+          $options: "i",
+        },
+      },
+      {
+        slug: {
+          $regex: `^${escapeRegex(category)}$`,
+          $options: "i",
+        },
+      },
     );
 
     const foundCategory = await categoryModel.findOne(categoryQuery);
@@ -261,17 +372,23 @@ exports.getPublicBlogs = asyncHandler(async (req, res) => {
     query.category = foundCategory._id;
   }
 
-  const pageNum = parseInt(page, 10);
-  const limitNum = parseInt(limit, 10);
+  const pageNum = Math.max(parseInt(page, 10) || 1, 1);
+
+  const limitNum = Math.max(parseInt(limit, 10) || 10, 1);
+
   const skip = (pageNum - 1) * limitNum;
 
   const [blogs, total] = await Promise.all([
     blogModel
       .find(query)
-      .sort({ createdAt: -1 })
+      .sort({
+        publishedAt: -1,
+        createdAt: -1,
+      })
       .skip(skip)
       .limit(limitNum)
       .populate("category"),
+
     blogModel.countDocuments(query),
   ]);
 
@@ -287,17 +404,49 @@ exports.getPublicBlogs = asyncHandler(async (req, res) => {
   });
 });
 
+/*
+|--------------------------------------------------------------------------
+| Create Blog
+|--------------------------------------------------------------------------
+*/
+
 exports.createBlog = asyncHandler(async (req, res) => {
   req.body.title = safeParseJSON(req.body.title, "title");
+
   req.body.content = safeParseJSON(req.body.content, "content");
+
   req.body.excerpt = safeParseJSON(req.body.excerpt, "excerpt");
+
   req.body.tags = safeParseJSON(req.body.tags, "tags");
+
   req.body.author = safeParseJSON(req.body.author, "author");
+
   req.body.relatedPosts = safeParseJSON(req.body.relatedPosts, "relatedPosts");
 
   req.body.slug = buildSlug(req.body.title);
 
+  /*
+   * لا نثق بتاريخ نشر مرسل من الـfrontend.
+   * السيرفر هو المسؤول عن تحديد تاريخ النشر.
+   */
+  delete req.body.publishedAt;
+
+  const isPublished = parseBoolean(req.body.published, false);
+
+  req.body.published = isPublished;
+
+  /*
+   * Published مباشرة:
+   * تاريخ النشر هو الوقت الحالي.
+   *
+   * Draft:
+   * لا يوجد تاريخ نشر بعد.
+   */
+  req.body.publishedAt = isPublished ? new Date() : null;
+
   const blog = await blogModel.create(req.body);
+
+  await blog.populate("category");
 
   res.status(201).json({
     status: true,
@@ -305,6 +454,12 @@ exports.createBlog = asyncHandler(async (req, res) => {
     data: blog,
   });
 });
+
+/*
+|--------------------------------------------------------------------------
+| Get One Blog - Dashboard
+|--------------------------------------------------------------------------
+*/
 
 exports.getOneBlog = asyncHandler(async (req, res, next) => {
   const blog = await blogModel.findById(req.params.id).populate("category");
@@ -321,9 +476,18 @@ exports.getOneBlog = asyncHandler(async (req, res, next) => {
   });
 });
 
+/*
+|--------------------------------------------------------------------------
+| Get Blog By Slug - Website
+|--------------------------------------------------------------------------
+*/
+
 exports.getBlogBySlug = asyncHandler(async (req, res, next) => {
   const blog = await blogModel
-    .findOne({ slug: req.params.slug, published: true })
+    .findOne({
+      slug: req.params.slug,
+      published: true,
+    })
     .populate("category");
 
   if (!blog) {
@@ -337,20 +501,58 @@ exports.getBlogBySlug = asyncHandler(async (req, res, next) => {
   if (Array.isArray(blog.relatedPosts) && blog.relatedPosts.length > 0) {
     relatedBlogs = await blogModel
       .find({
-        _id: { $in: blog.relatedPosts, $ne: blog._id },
+        _id: {
+          $in: blog.relatedPosts,
+          $ne: blog._id,
+        },
         published: true,
       })
-      .select("title slug image thumbnailImage excerpt author createdAt")
+      .sort({
+        publishedAt: -1,
+        createdAt: -1,
+      })
+      .select(
+        [
+          "title",
+          "slug",
+          "image",
+          "thumbnailImage",
+          "excerpt",
+          "author",
+          "category",
+          "createdAt",
+          "publishedAt",
+        ].join(" "),
+      )
+      .populate("category")
       .limit(4);
   } else if (blog.category) {
     relatedBlogs = await blogModel
       .find({
         category: blog.category._id,
         published: true,
-        _id: { $ne: blog._id },
+        _id: {
+          $ne: blog._id,
+        },
       })
-      .sort({ createdAt: -1 })
-      .select("title slug image thumbnailImage excerpt author createdAt")
+      .sort({
+        publishedAt: -1,
+        createdAt: -1,
+      })
+      .select(
+        [
+          "title",
+          "slug",
+          "image",
+          "thumbnailImage",
+          "excerpt",
+          "author",
+          "category",
+          "createdAt",
+          "publishedAt",
+        ].join(" "),
+      )
+      .populate("category")
       .limit(4);
   }
 
@@ -362,6 +564,12 @@ exports.getBlogBySlug = asyncHandler(async (req, res, next) => {
     },
   });
 });
+
+/*
+|--------------------------------------------------------------------------
+| Update Blog
+|--------------------------------------------------------------------------
+*/
 
 exports.updateBlog = asyncHandler(async (req, res, next) => {
   const existingBlog = await blogModel.findById(req.params.id);
@@ -379,9 +587,16 @@ exports.updateBlog = asyncHandler(async (req, res, next) => {
     req.body.removeThumbnailImage === true ||
     req.body.removeThumbnailImage === "true";
 
-  // هذه حقول تحكم وليست جزءاً من Blog model
+  /*
+   * حقول تحكم وليست حقولًا في Blog model.
+   */
   delete req.body.removeImage;
   delete req.body.removeThumbnailImage;
+
+  /*
+   * السيرفر فقط يحدد publishedAt.
+   */
+  delete req.body.publishedAt;
 
   if (req.body.title !== undefined) {
     req.body.title = safeParseJSON(req.body.title, "title");
@@ -415,8 +630,46 @@ exports.updateBlog = asyncHandler(async (req, res, next) => {
   }
 
   /*
-   * إذا وُجدت صورة جديدة داخل req.body.image فإنها تأخذ الأولوية.
-   * إذا لم توجد صورة جديدة وكان removeImage=true يتم تفريغ الحقل.
+   * معالجة Draft / Published.
+   */
+  if (req.body.published !== undefined) {
+    const nextPublished = parseBoolean(
+      req.body.published,
+      existingBlog.published,
+    );
+
+    req.body.published = nextPublished;
+
+    /*
+     * Draft -> Published لأول مرة.
+     *
+     * نسجل تاريخ النشر الحالي فقط عندما لا يوجد
+     * publishedAt سابق.
+     */
+    if (nextPublished && !existingBlog.publishedAt) {
+      req.body.publishedAt = new Date();
+    }
+
+    /*
+     * Published -> Draft:
+     *
+     * لا نضع publishedAt = null.
+     * نحتفظ بتاريخ النشر الأصلي.
+     */
+  } else if (existingBlog.published && !existingBlog.publishedAt) {
+    /*
+     * معالجة Blog قديم منشور قبل إضافة publishedAt.
+     *
+     * نستخدم createdAt بدل إعطائه تاريخ اليوم.
+     */
+    req.body.publishedAt = existingBlog.createdAt || new Date();
+  }
+
+  /*
+   * الصورة الجديدة لها الأولوية.
+   *
+   * إذا لم توجد صورة جديدة وكان removeImage=true،
+   * يتم حذف اسم الصورة من قاعدة البيانات.
    */
   if (removeImage && !req.body.image) {
     req.body.image = "";
@@ -426,14 +679,12 @@ exports.updateBlog = asyncHandler(async (req, res, next) => {
     req.body.thumbnailImage = "";
   }
 
-  const updatedBlog = await blogModel.findByIdAndUpdate(
-    req.params.id,
-    req.body,
-    {
+  const updatedBlog = await blogModel
+    .findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,
-    },
-  );
+    })
+    .populate("category");
 
   const filesToDelete = [];
 
@@ -448,7 +699,9 @@ exports.updateBlog = asyncHandler(async (req, res, next) => {
     filesToDelete.push(existingBlog.thumbnailImage);
   }
 
-  await Promise.all(filesToDelete.map(deleteBlogImageFile));
+  await Promise.all(
+    filesToDelete.map((filename) => deleteBlogImageFile(filename)),
+  );
 
   res.status(200).json({
     status: true,
@@ -456,6 +709,12 @@ exports.updateBlog = asyncHandler(async (req, res, next) => {
     data: updatedBlog,
   });
 });
+
+/*
+|--------------------------------------------------------------------------
+| Delete Blog
+|--------------------------------------------------------------------------
+*/
 
 exports.deleteBlog = asyncHandler(async (req, res, next) => {
   const deletedBlog = await blogModel.findByIdAndDelete(req.params.id);
@@ -477,8 +736,16 @@ exports.deleteBlog = asyncHandler(async (req, res, next) => {
   });
 });
 
+/*
+|--------------------------------------------------------------------------
+| Get Blogs By Category
+|--------------------------------------------------------------------------
+*/
+
 exports.getBlogsByCategory = asyncHandler(async (req, res, next) => {
-  const category = await categoryModel.findOne({ slug: req.params.slug });
+  const category = await categoryModel.findOne({
+    slug: req.params.slug,
+  });
 
   if (!category) {
     return next(
@@ -487,8 +754,14 @@ exports.getBlogsByCategory = asyncHandler(async (req, res, next) => {
   }
 
   const blogs = await blogModel
-    .find({ category: category._id, published: true })
-    .sort({ createdAt: -1 })
+    .find({
+      category: category._id,
+      published: true,
+    })
+    .sort({
+      publishedAt: -1,
+      createdAt: -1,
+    })
     .populate("category");
 
   res.status(200).json({

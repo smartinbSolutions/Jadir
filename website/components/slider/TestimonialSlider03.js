@@ -1,17 +1,15 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Swiper, SwiperSlide } from "swiper/react";
-
-import { Pagination, Autoplay, Navigation } from "swiper/modules";
+import { Pagination, Autoplay } from "swiper/modules";
 
 import getImageUrl from "@/components/utils/getImageUrl";
 
 import "swiper/css";
 import "swiper/css/pagination";
-import "swiper/css/navigation";
 
 const getLocalizedText = (value, lang = "en", fallback = "") => {
   if (typeof value === "string" || typeof value === "number") {
@@ -80,6 +78,8 @@ const getTestimonialImage = (testimonial) => {
 export default function TestimonialsShowcase({ testimonials = [] }) {
   const { i18n, t } = useTranslation();
 
+  const swiperRef = useRef(null);
+
   const lang = (i18n.resolvedLanguage || i18n.language || "en").split("-")[0];
 
   const isRtl = lang === "ar";
@@ -89,7 +89,6 @@ export default function TestimonialsShowcase({ testimonials = [] }) {
 
     return [...safeTestimonials].sort((a, b) => {
       const aDate = new Date(a?.createdAt || 0).getTime();
-
       const bDate = new Date(b?.createdAt || 0).getTime();
 
       return bDate - aDate;
@@ -101,8 +100,6 @@ export default function TestimonialsShowcase({ testimonials = [] }) {
   }
 
   const canNavigate = sortedTestimonials.length > 1;
-
-  const canLoop = sortedTestimonials.length > 3;
 
   const sectionLabel = getLocalizedText(
     t("about.testimonials"),
@@ -118,6 +115,44 @@ export default function TestimonialsShowcase({ testimonials = [] }) {
 
   const sectionSubtitle = getLocalizedText(t("usedByFounders"), lang, "");
 
+  const handlePrevious = () => {
+    const swiper = swiperRef.current;
+
+    if (!swiper || swiper.destroyed || swiper.isLocked) {
+      return;
+    }
+
+    swiper.slidePrev();
+  };
+
+  const handleNext = () => {
+    const swiper = swiperRef.current;
+
+    if (!swiper || swiper.destroyed || swiper.isLocked) {
+      return;
+    }
+
+    swiper.slideNext();
+  };
+
+  const handleLeftArrow = () => {
+    if (isRtl) {
+      handleNext();
+      return;
+    }
+
+    handlePrevious();
+  };
+
+  const handleRightArrow = () => {
+    if (isRtl) {
+      handlePrevious();
+      return;
+    }
+
+    handleNext();
+  };
+
   return (
     <section
       className={`pt-5 jadwa-testimonials sec-pad ${isRtl ? "rtl" : "ltr"}`}
@@ -128,7 +163,6 @@ export default function TestimonialsShowcase({ testimonials = [] }) {
           <div className="jadwa-testimonials-head">
             <div className="jadwa-pill">
               <span className="jadwa-pill-dot" />
-
               <span>{sectionLabel}</span>
             </div>
 
@@ -145,7 +179,10 @@ export default function TestimonialsShowcase({ testimonials = [] }) {
                 <button
                   type="button"
                   className="jadwa-featured-nav jadwa-featured-left"
-                  aria-label="Previous testimonial"
+                  aria-label={
+                    isRtl ? "Next testimonial" : "Previous testimonial"
+                  }
+                  onClick={handleLeftArrow}
                 >
                   <i className="fa-solid fa-chevron-left" aria-hidden="true" />
                 </button>
@@ -153,7 +190,10 @@ export default function TestimonialsShowcase({ testimonials = [] }) {
                 <button
                   type="button"
                   className="jadwa-featured-nav jadwa-featured-right"
-                  aria-label="Next testimonial"
+                  aria-label={
+                    isRtl ? "Previous testimonial" : "Next testimonial"
+                  }
+                  onClick={handleRightArrow}
                 >
                   <i className="fa-solid fa-chevron-right" aria-hidden="true" />
                 </button>
@@ -162,27 +202,19 @@ export default function TestimonialsShowcase({ testimonials = [] }) {
 
             <Swiper
               key={`${lang}-${isRtl ? "rtl" : "ltr"}`}
-              modules={[Pagination, Autoplay, Navigation]}
-              navigation={
-                canNavigate
-                  ? {
-                      prevEl: isRtl
-                        ? ".jadwa-featured-right"
-                        : ".jadwa-featured-left",
-
-                      nextEl: isRtl
-                        ? ".jadwa-featured-left"
-                        : ".jadwa-featured-right",
-                    }
-                  : false
-              }
+              modules={[Pagination, Autoplay]}
+              onSwiper={(swiper) => {
+                swiperRef.current = swiper;
+              }}
+              onDestroy={() => {
+                swiperRef.current = null;
+              }}
               spaceBetween={16}
               slidesPerView={1}
               breakpoints={{
                 768: {
                   slidesPerView: 2,
                 },
-
                 1200: {
                   slidesPerView: 3,
                 },
@@ -191,8 +223,8 @@ export default function TestimonialsShowcase({ testimonials = [] }) {
                 clickable: true,
               }}
               watchOverflow
-              loop={canLoop}
-              rewind={canNavigate && !canLoop}
+              loop={false}
+              rewind={canNavigate}
               autoplay={
                 canNavigate
                   ? {
@@ -229,9 +261,7 @@ export default function TestimonialsShowcase({ testimonials = [] }) {
                       ) : null}
 
                       <div className="jadwa-stars">
-                        {Array.from({
-                          length: rating,
-                        }).map((_, starIndex) => (
+                        {Array.from({ length: rating }).map((_, starIndex) => (
                           <i
                             key={starIndex}
                             className="fa-solid fa-star"

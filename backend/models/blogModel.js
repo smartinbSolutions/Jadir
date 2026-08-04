@@ -22,6 +22,11 @@ const blogSchema = new mongoose.Schema(
       default: "",
     },
 
+    publishedAt: {
+      type: Date,
+      default: null,
+    },
+
     thumbnailImage: {
       type: String,
       default: "",

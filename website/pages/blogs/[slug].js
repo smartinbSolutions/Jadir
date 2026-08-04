@@ -132,7 +132,10 @@ export default function BlogDetailsPage({
               <h1 className="jadwa-blog-details-title">{blogTitle}</h1>
 
               <div className="jadwa-blog-details-meta">
-                <span>{formatDate(blog?.createdAt)}</span>
+                <span>
+                  {" "}
+                  {formatDate(blog?.publishedAt || blog?.createdAt)}{" "}
+                </span>
 
                 {(authorName || authorRole) && (
                   <>

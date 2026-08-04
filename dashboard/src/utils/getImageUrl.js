@@ -1,13 +1,17 @@
 import { imageURL } from "../api/globalData";
 
 const getImageUrl = (path) => {
-  if (!path) return "";
+  if (!path || typeof path !== "string") return "";
 
-  if (path.startsWith("http")) {
+  if (/^https?:\/\//i.test(path)) {
     return path;
   }
 
-  return `${imageURL}${path}`;
+  const baseUrl = imageURL.replace(/\/+$/, "");
+
+  const normalizedPath = path.replace(/\\/g, "/").replace(/^\/+/, "");
+
+  return `${baseUrl}/${normalizedPath}`;
 };
 
 export default getImageUrl;

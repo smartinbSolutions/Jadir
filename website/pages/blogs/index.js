@@ -363,7 +363,11 @@ export default function BlogPage({
                               )}{" "}
                             </span>
                             <span className="jadwa-blog-meta-dot" />
-                            <span>{formatDate(blog?.createdAt)}</span>
+                            <span>
+                              {formatDate(
+                                blog?.publishedAt || blog?.createdAt,
+                              )}{" "}
+                            </span>
                           </div>
 
                           <Link
@@ -441,7 +445,9 @@ export default function BlogPage({
                           ) : null}
 
                           <span className="jadwa-blog-card-v2-date">
-                            {formatDate(blog?.createdAt)}
+                            {formatDate(
+                              blog?.publishedAt || blog?.createdAt,
+                            )}{" "}
                           </span>
                         </div>
 
