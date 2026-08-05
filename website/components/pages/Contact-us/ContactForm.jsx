@@ -6,10 +6,12 @@ import {
   useGetContactInfoQuery,
   useSendMessageMutation,
 } from "@/RTK/Api/Contact/ContactApi";
+
+import "../../../../dashboard/src/components/keenicons/assets/duotone/style.css";
 import { useGetPublicServicesQuery } from "@/RTK/Api/Services/ServicesApi";
 import SearchableSelect from "@/components/elements/SearchableSelect";
 import LoadingCard from "@/components/utils/LoadingCard";
-
+import { FaWhatsapp, FaMapMarkerAlt } from "react-icons/fa";
 const requestTypeOptions = [
   { value: "investment-inquiry", label: "consultInquiry" },
   { value: "partnership", label: "partnership" },
@@ -279,16 +281,27 @@ const ContactForm = () => {
                           </p>
                         ))}
                         {contact?.whatsapp ? (
-                          <p>
+                          <p className="jadwa-contact-v2-whatsapp-row">
                             <a
-                              href={`https://wa.me/${contact.whatsapp.replace(
-                                /[^\d]/g,
-                                "",
-                              )}`}
+                              href={`https://wa.me/${contact.whatsapp.replace(/[^\d]/g, "")}`}
                               target="_blank"
                               rel="noreferrer"
+                              className="jadwa-contact-v2-whatsapp-link"
+                              aria-label="WhatsApp"
                             >
-                              {t("whatsapp")}: {contact.whatsapp}
+                              <span
+                                className="jadwa-contact-v2-whatsapp-icon"
+                                aria-hidden="true"
+                              >
+                                <FaWhatsapp />
+                              </span>
+
+                              <span
+                                className="jadwa-contact-v2-whatsapp-number"
+                                dir="ltr"
+                              >
+                                {contact.whatsapp}
+                              </span>
                             </a>
                           </p>
                         ) : null}
@@ -515,22 +528,22 @@ const ContactForm = () => {
                           href={branch.mapLink}
                           target="_blank"
                           rel="noreferrer"
+                          className="jadwa-contact-v2-branch-link"
                         >
-                          {t("map")}
+                          <FaMapMarkerAlt aria-hidden="true" />
+                          <span>{t("map")}</span>
                         </a>
                       ) : null}
 
                       {branch?.whatsapp ? (
                         <a
-                          href={`https://wa.me/${branch.whatsapp.replace(
-                            /[^\d]/g,
-                            "",
-                          )}`}
+                          href={`https://wa.me/${branch.whatsapp.replace(/[^\d]/g, "")}`}
                           target="_blank"
                           rel="noreferrer"
-                          dir="ltr"
+                          className="jadwa-contact-v2-branch-link"
                         >
-                          {t("whatsapp")}
+                          <FaWhatsapp aria-hidden="true" />
+                          <span>{t("whatsapp")}</span>
                         </a>
                       ) : null}
                     </div>

@@ -769,6 +769,43 @@ html[dir="rtl"] .jadir-project-detail-back:hover i {
   letter-spacing: -0.035em;
 }
 
+/* English and Turkish */
+.jadir-project-detail-page.ltr .jadir-project-detail-block {
+  direction: ltr;
+  grid-template-columns: 92px minmax(0, 1fr);
+}
+
+.jadir-project-detail-page.ltr .jadir-project-detail-block-count {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.jadir-project-detail-page.ltr .jadir-project-detail-block-content {
+  grid-column: 2;
+  grid-row: 1;
+  direction: ltr;
+  text-align: left;
+}
+
+/* Arabic */
+.jadir-project-detail-page.rtl .jadir-project-detail-block {
+  direction: ltr;
+  grid-template-columns: minmax(0, 1fr) 92px;
+}
+
+.jadir-project-detail-page.rtl .jadir-project-detail-block-count {
+  grid-column: 2;
+  grid-row: 1;
+  direction: ltr;
+}
+
+.jadir-project-detail-page.rtl .jadir-project-detail-block-content {
+  grid-column: 1;
+  grid-row: 1;
+  direction: rtl;
+  text-align: right;
+}
+
 html[dir="rtl"] .jadir-project-detail-block h3 {
   letter-spacing: 0;
 }
