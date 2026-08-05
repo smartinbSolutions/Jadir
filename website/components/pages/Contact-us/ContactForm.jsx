@@ -7,7 +7,7 @@ import {
   useSendMessageMutation,
 } from "@/RTK/Api/Contact/ContactApi";
 
-import "../../../../dashboard/src/components/keenicons/assets/duotone/style.css";
+// import "../../../../dashboard/src/components/keenicons/assets/duotone/style.css";
 import { useGetPublicServicesQuery } from "@/RTK/Api/Services/ServicesApi";
 import SearchableSelect from "@/components/elements/SearchableSelect";
 import LoadingCard from "@/components/utils/LoadingCard";
@@ -70,17 +70,17 @@ const ContactForm = () => {
             .filter((item) => item?.isActive !== false)
             .sort((a, b) => (a?.order || 0) - (b?.order || 0))
         : [],
-    [contact?.branches],
+    [contact?.branches]
   );
 
   const serviceOptions = useMemo(
     () =>
       Array.isArray(servicesResponse?.data)
         ? [...servicesResponse.data].sort(
-            (a, b) => (a?.order || 0) - (b?.order || 0),
+            (a, b) => (a?.order || 0) - (b?.order || 0)
           )
         : [],
-    [servicesResponse?.data],
+    [servicesResponse?.data]
   );
 
   const getServiceLabel = (service) =>
@@ -283,7 +283,10 @@ const ContactForm = () => {
                         {contact?.whatsapp ? (
                           <p className="jadwa-contact-v2-whatsapp-row">
                             <a
-                              href={`https://wa.me/${contact.whatsapp.replace(/[^\d]/g, "")}`}
+                              href={`https://wa.me/${contact.whatsapp.replace(
+                                /[^\d]/g,
+                                ""
+                              )}`}
                               target="_blank"
                               rel="noreferrer"
                               className="jadwa-contact-v2-whatsapp-link"
@@ -413,8 +416,8 @@ const ContactForm = () => {
                             isLoadingServices
                               ? t("loading")
                               : isServicesError
-                                ? t("failed_load_data")
-                                : t("search.button")
+                              ? t("failed_load_data")
+                              : t("search.button")
                           }
                           options={{ data: serviceOptions }}
                           selectedValue={formData.service}
@@ -466,8 +469,8 @@ const ContactForm = () => {
                         isSubmitting
                           ? "fa-solid fa-spinner fa-spin"
                           : i18n.language?.startsWith("ar")
-                            ? "fa-solid fa-arrow-left"
-                            : "fa-solid fa-arrow-right"
+                          ? "fa-solid fa-arrow-left"
+                          : "fa-solid fa-arrow-right"
                       }
                       aria-hidden="true"
                     />
@@ -537,7 +540,10 @@ const ContactForm = () => {
 
                       {branch?.whatsapp ? (
                         <a
-                          href={`https://wa.me/${branch.whatsapp.replace(/[^\d]/g, "")}`}
+                          href={`https://wa.me/${branch.whatsapp.replace(
+                            /[^\d]/g,
+                            ""
+                          )}`}
                           target="_blank"
                           rel="noreferrer"
                           className="jadwa-contact-v2-branch-link"
