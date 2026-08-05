@@ -562,7 +562,7 @@ html[dir="rtl"] .jadwa-about-slide-bg-icon {
   margin-bottom: 16px;
   padding: 8px 13px;
   border-radius: 999px;
-  color: rgba(255, 255, 255, 0.76);
+  color: rgba(255, 255, 255, 0.95);
   background: rgba(255, 255, 255, 0.095);
   border: 1px solid rgba(255, 255, 255, 0.13);
   font-size: 11px;
@@ -594,7 +594,7 @@ html[dir="rtl"] .jadwa-about-slide-card h3 {
   z-index: 1;
   max-width: 430px;
   margin: 0;
-  color: rgba(255, 255, 255, 0.74);
+  color: rgba(255, 255, 255, 0.95);
   font-family: var(--urbanist);
   font-size: 0.98rem;
   text-align: justify !important;
@@ -1639,7 +1639,7 @@ html[dir="rtl"] .site-cta::after {
   align-items: center;
   gap: 9px;
   margin-bottom: 18px;
-  color: rgba(255, 255, 255, 0.68);
+  color: rgba(255, 255, 255, 0.95);
   font-size: 12px;
   font-weight: 700;
   line-height: 1;
@@ -1670,7 +1670,7 @@ html[dir="rtl"] .site-cta h2 {
 .site-cta p {
   max-width: 620px;
   margin: 20px 0 0;
-  color: rgba(255, 255, 255, 0.68);
+  color: rgba(255, 255, 255, 0.95);
   font-size: 1.05rem;
   font-weight: 500;
   line-height: 1.8;
@@ -3463,7 +3463,7 @@ html[dir="rtl"] .jadwa-blog-featured-title {
 .jadwa-blog-featured-excerpt {
   max-width: 520px;
   margin: 0 0 28px;
-  color: rgba(255, 255, 255, 0.76);
+  color: rgba(255, 255, 255, 0.95);
   font-size: 0.95rem;
   font-weight: 500;
   line-height: 1.85;

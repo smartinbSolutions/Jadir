@@ -563,7 +563,7 @@ html[dir="rtl"] .about-value-title {
 .about-value-dynamic-card.is-active .about-value-text p {
   text-align: justify !important;
   max-width: 620px;
-  color: rgba(255, 255, 255, 0.76);
+  color: rgba(255, 255, 255, 0.95);
   font-size: 14px;
   font-weight: 500;
   line-height: 1.9;

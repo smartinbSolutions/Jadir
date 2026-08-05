@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import baseURL, { BlogEndPoint } from "@/api/GlobalData";
+import baseURL, { BlogsEndPoint } from "@/api/GlobalData";
 
 export const BlogApi = createApi({
   reducerPath: "blogApi",
@@ -24,19 +24,19 @@ export const BlogApi = createApi({
         params.append("limit", limit.toString());
         if (CategoryId) params.append("category", CategoryId.toString());
         if (published) params.append("published", published.toString());
-        return `${BlogEndPoint}/public?${params.toString()}`;
+        return `${BlogsEndPoint}/public?${params.toString()}`;
       },
       providesTags: ["blog"],
     }),
 
     // ✅ Get one blog by ID
     getOneBlogById: builder.query({
-      query: (id) => `${BlogEndPoint}/${id}`,
+      query: (id) => `${BlogsEndPoint}/${id}`,
       providesTags: ["blog"],
     }),
     // ✅ Get one blog by Category Id
     getBlogsByCategory: builder.query({
-      query: (slug) => `${BlogEndPoint}/blog_categories/${slug}`,
+      query: (slug) => `${BlogsEndPoint}/blog_categories/${slug}`,
       providesTags: ["blog"],
     }),
   }),

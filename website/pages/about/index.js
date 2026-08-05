@@ -274,13 +274,10 @@ export default function About({ data = {}, homeData = {} }) {
                                     className={`about-value-text ${
                                       isActive ? "" : "about-value-text-light"
                                     }`}
-                                  >
-                                    <p
-                                      dangerouslySetInnerHTML={{
-                                        __html: card.content,
-                                      }}
-                                    />
-                                  </div>
+                                    dangerouslySetInnerHTML={{
+                                      __html: card.content,
+                                    }}
+                                  />
                                 </div>
                               </div>
                             );

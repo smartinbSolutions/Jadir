@@ -17,6 +17,19 @@ const REQUEST_TYPE_LABELS = {
   "investment-inquiry": "Service Request",
 };
 
+const sendEmailInBackground = (emailOptions) => {
+  setImmediate(async () => {
+    try {
+      await sendEmail(emailOptions);
+    } catch (error) {
+      console.error("Contact notification email failed:", {
+        message: error.message,
+        code: error.code,
+      });
+    }
+  });
+};
+
 const normalizeRequestType = (value = "") => {
   if (value === "consult-inquiry") return "inquiry";
   if (value === "investment-inquiry") return "service-request";
@@ -125,38 +138,88 @@ exports.createMessage = asyncHandler(async (req, res) => {
   }
 
   const createdMessage = await messagesModel.create(req.body);
-  const populatedMessage = await createdMessage.populate("service", "title slug");
+
+  const populatedMessage = await createdMessage.populate(
+    "service",
+    "title slug",
+  );
+
   const attachments = createdMessage?.attachment?.path
     ? [
         {
           filename:
             createdMessage.attachment.originalName ||
             createdMessage.attachment.filename,
+
           path: path.join(__dirname, "..", createdMessage.attachment.path),
+
           contentType: createdMessage.attachment.mimetype,
         },
       ]
     : [];
 
-  await sendEmail({
+  const emailOptions = {
     to: "contact@jadirconsult.com",
     replyTo: createdMessage.email,
     subject: "New Contact Form Message",
+
     html: `
       <h3>New Message Received</h3>
-      <p><strong>Name:</strong> ${createdMessage.name}</p>
-      <p><strong>Email:</strong> ${createdMessage.email}</p>
-      <p><strong>Phone:</strong> ${createdMessage.phone || "N/A"}</p>
-      <p><strong>Request Type:</strong> ${REQUEST_TYPE_LABELS[createdMessage.requestType] || createdMessage.requestType}</p>
-      <p><strong>Requested Service:</strong> ${populatedMessage?.service?.title?.en || populatedMessage?.service?.title?.ar || "N/A"}</p>
-      <p><strong>Subject:</strong> ${createdMessage.subject || "N/A"}</p>
-      <p><strong>Message:</strong><br/>${createdMessage.message}</p>
-      <p><strong>Attachment:</strong> ${createdMessage?.attachment?.originalName || "N/A"}</p>
-    `,
-    attachments,
-  });
 
-  res.status(201).json({
+      <p>
+        <strong>Name:</strong>
+        ${createdMessage.name}
+      </p>
+
+      <p>
+        <strong>Email:</strong>
+        ${createdMessage.email}
+      </p>
+
+      <p>
+        <strong>Phone:</strong>
+        ${createdMessage.phone || "N/A"}
+      </p>
+
+      <p>
+        <strong>Request Type:</strong>
+        ${
+          REQUEST_TYPE_LABELS[createdMessage.requestType] ||
+          createdMessage.requestType
+        }
+      </p>
+
+      <p>
+        <strong>Requested Service:</strong>
+        ${
+          populatedMessage?.service?.title?.en ||
+          populatedMessage?.service?.title?.ar ||
+          "N/A"
+        }
+      </p>
+
+      <p>
+        <strong>Subject:</strong>
+        ${createdMessage.subject || "N/A"}
+      </p>
+
+      <p>
+        <strong>Message:</strong><br />
+        ${createdMessage.message}
+      </p>
+
+      <p>
+        <strong>Attachment:</strong>
+        ${createdMessage?.attachment?.originalName || "N/A"}
+      </p>
+    `,
+
+    attachments,
+  };
+
+  sendEmailInBackground(emailOptions);
+
+  return res.status(201).json({
     status: true,
     message: "Message sent successfully",
     data: populatedMessage,
