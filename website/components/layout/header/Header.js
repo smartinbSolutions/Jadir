@@ -33,9 +33,9 @@ export default function Header({
 
   const languages = useMemo(
     () => [
-      { value: "en", label: t("English") },
+      // { value: "en", label: t("English") },
       { value: "ar", label: t("Arabic") },
-      { value: "tr", label: t("Turkish") },
+      // { value: "tr", label: t("Turkish") },
     ],
     [t],
   );
