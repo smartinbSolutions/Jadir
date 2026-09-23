@@ -3,7 +3,7 @@ import { fetchJSON, pickArray, pickObject } from "../GlobalHooks/GlobalHooks";
 import baseURL, {
   AboutHomeEndPoint,
   AboutServicesEndPoint,
-  BlogsEndPoint,
+  BlogEndPoint,
   BoardMembersEndPoint,
   CategoriesEndPoint,
   CompaniesPublicEndPoint,
@@ -53,7 +53,7 @@ export async function getAllBlogs({
 
   try {
     const response = await fetch(
-      `${baseURL}${BlogsEndPoint}/public?${params.toString()}`,
+      `${baseURL}${BlogEndPoint}/public?${params.toString()}`,
     );
 
     if (!response.ok) {
@@ -94,7 +94,7 @@ export async function getBlogBySlug(slug) {
 
   try {
     const payload = await fetchJSON(
-      `${baseURL}${BlogsEndPoint}/public/slug/${encodeURIComponent(slug)}`,
+      `${baseURL}${BlogEndPoint}/public/slug/${encodeURIComponent(slug)}`,
     );
 
     return normalizeBlog(payload?.data || {});

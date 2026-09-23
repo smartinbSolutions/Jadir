@@ -7,9 +7,9 @@ import { siteLinks } from "@/components/website/websiteUtils";
 import SearchBox from "./SearchBox";
 
 const languages = [
-  { value: "en", label: "EN" },
+  // { value: "en", label: "EN" },
   { value: "ar", label: "AR" },
-  { value: "tr", label: "TR" },
+  // { value: "tr", label: "TR" },
 ];
 
 const socialConfig = [
