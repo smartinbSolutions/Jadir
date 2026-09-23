@@ -301,115 +301,63 @@ export function ConsultCTA() {
 }
 
 export function TrustedLogos({ partners = [], companies = [] }) {
-  const isMobile = useIsMobile();
   const { i18n, t } = useTranslation();
-
   const lang = i18n.language || "en";
   const isRtl = lang === "ar";
-
   const partnerItems = partners
     .map((partner) => ({
       id: `partner-${partner?._id || partner?.id}`,
       type: "partner",
-
       title: localize(partner?.title || partner?.name, lang),
-
       image: getImageUrl(partner?.imageUrl || partner?.logoUrl),
     }))
     .filter((item) => item.image);
-
   const companyItems = companies
     .map((company) => ({
       id: `company-${company?._id || company?.id}`,
       type: "company",
-
       title: localize(company?.name || company?.companyName, lang),
-
       image: getImageUrl(company?.imageUrl || company?.logoUrl),
     }))
     .filter((item) => item.image);
-
-  const items = [...partnerItems, ...companyItems];
-
+  const items = [...partnerItems];
   if (!items.length) {
     return null;
   }
-
-  const repeatedItems =
-    items.length > 1 ? [...items, ...items, ...items] : items;
-
   return (
     <section
       className={`jadwa-trusted-section ${isRtl ? "rtl" : "ltr"}`}
       dir={isRtl ? "rtl" : "ltr"}
     >
-      <div className="jadwa-trusted-bg" />
-
+      {" "}
+      <div className="jadwa-trusted-bg" />{" "}
       <div className="auto-container">
+        {" "}
         <div className="statistics-head">
-          <span className="statistics-subtitle">{t("trustedBy")}</span>
-
-          <h2 className="jadwa-services-title">{t("trustedPartners")}</h2>
-        </div>
-
-        <div className="jadwa-trusted-rail">
-          <Swiper
-            key={`trusted-logos-${lang}-${items.length}`}
-            modules={[Autoplay]}
-            spaceBetween={isMobile ? 18 : 40}
-            slidesPerView={isMobile ? 2 : 3}
-            loop={repeatedItems.length > 1}
-            speed={5200}
-            allowTouchMove={false}
-            autoplay={
-              repeatedItems.length > 1
-                ? {
-                    delay: 1,
-                    disableOnInteraction: false,
-                    pauseOnMouseEnter: false,
-                  }
-                : false
-            }
-            breakpoints={{
-              480: {
-                slidesPerView: 2.4,
-                spaceBetween: 12,
-              },
-
-              640: {
-                slidesPerView: 3,
-                spaceBetween: 14,
-              },
-
-              768: {
-                slidesPerView: 4,
-                spaceBetween: 16,
-              },
-
-              1024: {
-                slidesPerView: 4,
-                spaceBetween: 16,
-              },
-            }}
-            className="jadwa-trusted-swiper"
-          >
-            {repeatedItems.map((item, index) => (
-              <SwiperSlide key={`${item.id}-${index}`}>
-                <div className="jadwa-trusted-logo-card">
-                  <img
-                    src={item.image}
-                    alt={
-                      item.title ||
-                      (item.type === "company" ? "Company" : "Partner")
-                    }
-                    loading="lazy"
-                  />
-                </div>
-              </SwiperSlide>
-            ))}
-          </Swiper>
-        </div>
-      </div>
+          {" "}
+          <span className="statistics-subtitle"> {t("trustedBy")} </span>{" "}
+          <h2 className="jadwa-services-title">
+            {" "}
+            {t("trustedPartners")}{" "}
+          </h2>{" "}
+        </div>{" "}
+        <div className="jadwa-trusted-grid">
+          {" "}
+          {items.map((item) => (
+            <div className="jadwa-trusted-logo-card" key={item.id}>
+              {" "}
+              <img
+                src={item.image}
+                alt={
+                  item.title ||
+                  (item.type === "company" ? "Company" : "Partner")
+                }
+                loading="lazy"
+              />{" "}
+            </div>
+          ))}{" "}
+        </div>{" "}
+      </div>{" "}
     </section>
   );
 }

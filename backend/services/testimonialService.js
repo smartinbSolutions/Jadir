@@ -5,20 +5,37 @@ const { uploadSingleImage } = require("../middlewares/uploadingImage");
 const safeParseJSON = require("../utils/safeParseJson");
 const { v4: uuidv4 } = require("uuid");
 const sharp = require("sharp");
+const fs = require("fs");
+const path = require("path");
+
+const TESTIMONIAL_UPLOAD_DIRECTORY = path.join(
+  process.cwd(),
+  "uploads",
+  "testimonials",
+);
 
 exports.uploadTestimonialImage = uploadSingleImage("image");
 
 exports.resizeTestimonialImage = asyncHandler(async (req, res, next) => {
   if (!req.file) return next();
 
+  fs.mkdirSync(TESTIMONIAL_UPLOAD_DIRECTORY, {
+    recursive: true,
+  });
+
   const filename = `testimonial-${uuidv4()}-${Date.now()}.webp`;
+
+  const imagePath = path.join(TESTIMONIAL_UPLOAD_DIRECTORY, filename);
 
   await sharp(req.file.buffer)
     .toFormat("webp")
-    .webp({ quality: 70 })
-    .toFile(`uploads/testimonials/${filename}`);
+    .webp({
+      quality: 70,
+    })
+    .toFile(imagePath);
 
-  req.body.image = filename;
+  req.body.image = filename;  
+
   next();
 });
 
