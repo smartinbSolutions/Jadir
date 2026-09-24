@@ -58,12 +58,14 @@ exports.resizePageBannerImages = asyncHandler(async (req, res, next) => {
 
     const filename = `${pageKey}-${uuidv4()}-${Date.now()}.webp`;
 
-    await sharp(file.buffer)
-      .resize(1800, 900, { fit: "cover" })
-      .toFormat("webp")
-      .webp({ quality: 80 })
-      .toFile(path.join(PAGE_BANNER_UPLOAD_DIR, filename));
-
+await sharp(file.buffer)
+  .resize({
+    width: 1800,
+    withoutEnlargement: true,
+  })
+  .toFormat("webp")
+  .webp({ quality: 80 })
+  .toFile(path.join(PAGE_BANNER_UPLOAD_DIR, filename));
     uploadedPaths[pageKey] = `page-banners/${filename}`;
   }
 
